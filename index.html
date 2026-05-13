@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Indicadores SPOT | VIZI SP</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#eef0f3;color:#1a2340;min-height:100vh}
+
+/* HEADER */
+.header{background:#1a2c52;padding:28px 48px 24px}
+.header-title{color:#fff;font-size:26px;font-weight:700;letter-spacing:-.3px}
+.header-sub{color:#8fa4c8;font-size:13px;margin-top:4px;font-weight:400}
+
+/* MAIN */
+.main{padding:40px 48px 60px;display:flex;flex-direction:column;align-items:center}
+.section-label{font-size:11px;font-weight:700;color:#7a8aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;width:100%;max-width:1000px}
+
+/* GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;width:100%;max-width:1000px}
+
+/* CARD */
+.card{background:#fff;border-radius:12px;padding:24px;border:1px solid #e4e9f2;cursor:pointer;transition:box-shadow .2s,transform .15s;position:relative;overflow:hidden;text-decoration:none;display:block}
+.card:hover{box-shadow:0 6px 24px rgba(26,44,82,.12);transform:translateY(-2px)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:12px 12px 0 0}
+.card.green::before{background:#1e6b3a}
+.card.blue::before{background:#1a2c52}
+.card.purple::before{background:#6c3fc5}
+.card.orange::before{background:#c47a1a}
+
+/* CARD HEADER */
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.card-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.card-icon.green{background:#e6f5ed}
+.card-icon.blue{background:#eaf0fb}
+.card-icon.purple{background:#f0eafb}
+.card-icon.orange{background:#fef3e4}
+.card-badge{background:#e6f5ed;color:#1e6b3a;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.3px}
+
+/* CARD BODY */
+.card-title{font-size:17px;font-weight:700;color:#1a2340;margin-bottom:6px}
+.card-desc{font-size:12px;color:#7a8aaa;line-height:1.5;margin-bottom:16px;min-height:52px}
+
+/* TAGS */
+.card-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.tags-list{display:flex;gap:6px;flex-wrap:wrap}
+.tag{background:#f0f2f5;color:#5a6a8a;font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;border:1px solid #dce3ef}
+
+/* ARROW */
+.card-arrow{color:#b8cce8;font-size:18px;transition:color .2s,transform .2s}
+.card:hover .card-arrow{color:#1a2c52;transform:translateX(3px)}
+
+/* DISABLED CARD */
+.card.disabled{opacity:.5;cursor:default;pointer-events:none}
+.card.disabled .card-badge{background:#f0f2f5;color:#7a8aaa}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">INDICADORES SPOT | VIZI SP</div>
+  <div class="header-sub">Biblioteca de relatórios operacionais</div>
+</div>
+
+<div class="main">
+  <div class="section-label">Relatórios Disponíveis</div>
+  <div class="cards-grid">
+
+    <!-- GPS | Promotores -->
+    <a class="card green" href="Relatorio_GPS_Marcacoes.html">
+      <div class="card-head">
+        <div class="card-icon green">📍</div>
+        <span class="card-badge">Ativo</span>
+      </div>
+      <div class="card-title">GPS | Promotores</div>
+      <div class="card-desc">Acompanhamento das marcações de entrada e saída dos promotores de vendas por CDD, supervisor e loja.</div>
+      <div class="card-tags">
+        <div class="tags-list">
+          <span class="tag">Resumo</span>
+          <span class="tag">Status</span>
+          <span class="tag">Jornada</span>
+          <span class="tag">Score 5</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- Tasks | Promotores (em breve) -->
+    <div class="card blue disabled">
+      <div class="card-head">
+        <div class="card-icon blue">✅</div>
+        <span class="card-badge" style="background:#f0f2f5;color:#7a8aaa">Em breve</span>
+      </div>
+      <div class="card-title">Tasks | Promotores</div>
+      <div class="card-desc">Acompanhamento das tarefas executadas pelos promotores de vendas por categoria, CDD e supervisor.</div>
+      <div class="card-tags">
+        <div class="tags-list">
+          <span class="tag">Resumo</span>
+          <span class="tag">Status</span>
+          <span class="tag">Jornada</span>
+          <span class="tag">Categorias</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+
+    <!-- Painel de Promotores (em breve) -->
+    <div class="card purple disabled">
+      <div class="card-head">
+        <div class="card-icon purple">👤</div>
+        <span class="card-badge" style="background:#f0f2f5;color:#7a8aaa">Em breve</span>
+      </div>
+      <div class="card-title">Painel de Promotores</div>
+      <div class="card-desc">Resultado acumulado por promotor — GPS, Tasks e Jornada em uma visão consolidada.</div>
+      <div class="card-tags">
+        <div class="tags-list">
+          <span class="tag">GPS</span>
+          <span class="tag">Tasks</span>
+          <span class="tag">Jornada</span>
+          <span class="tag">Acumulado</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+
+    <!-- RPS (em breve) -->
+    <div class="card orange disabled">
+      <div class="card-head">
+        <div class="card-icon orange">📊</div>
+        <span class="card-badge" style="background:#f0f2f5;color:#7a8aaa">Em breve</span>
+      </div>
+      <div class="card-title">RPS</div>
+      <div class="card-desc">Resultados por CDD comparando Base Geral e Score 5 — Plan, Real e % de realização.</div>
+      <div class="card-tags">
+        <div class="tags-list">
+          <span class="tag">Por CDD</span>
+          <span class="tag">Base Geral</span>
+          <span class="tag">Score 5</span>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

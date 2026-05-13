@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GPS | Promotores</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#eef0f3;color:#1a2340;font-size:13px}
+.hdr{background:#1a2c52;padding:14px 26px 0;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hdr-title{color:#fff;font-size:19px;font-weight:700}
+.hdr-sub{color:#8fa4c8;font-size:11px;margin-top:2px}
+.btn-menu{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif}
+.nav-tabs{display:flex}
+.nav-tab{background:none;border:none;color:#8fa4c8;padding:8px 16px;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;font-family:'Inter',sans-serif;transition:all .2s}
+.nav-tab:hover{color:#c9d8f0}.nav-tab.active{color:#fff;border-bottom-color:#fff}
+.page{display:none;padding:14px 22px 48px;animation:fi .2s}.page.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* FILTROS */
+.filt-box{background:#fff;border:1px solid #dce3ef;border-radius:8px;padding:10px 14px;margin-bottom:12px}
+.filt-lbl{font-size:9px;font-weight:700;color:#7a8aaa;text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+.filt-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:9px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.5px}
+.fg select{background:#fff;border:1px solid #dce3ef;border-radius:5px;color:#1a2340;padding:5px 7px;font-size:11px;font-family:'Inter',sans-serif;outline:none;cursor:pointer;min-width:135px}
+.fg select:focus{border-color:#1a2c52}
+.btn-clear{background:none;border:1px solid #dce3ef;color:#5a6a8a;padding:5px 11px;border-radius:5px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;margin-top:16px}
+.btn-clear:hover{border-color:#1a2c52;color:#1a2c52}
+
+/* MULTI-SELECT */
+.multi-sel{position:relative;min-width:135px}
+.ms-btn{width:100%;background:#fff;border:1px solid #dce3ef;border-radius:5px;color:#1a2340;padding:5px 7px;font-size:11px;font-family:'Inter',sans-serif;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:4px;white-space:nowrap}
+.ms-btn:focus{outline:none;border-color:#1a2c52}
+.ms-dd{display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:200;background:#fff;border:1px solid #dce3ef;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:245px;max-height:210px;overflow-y:auto;padding:4px 0}
+.ms-dd.open{display:block}
+.ms-item{padding:3px 10px;cursor:pointer;font-size:11px}
+.ms-item:hover{background:#f0f4fb}
+.ms-item label{display:flex;align-items:center;gap:7px;cursor:pointer;width:100%}
+.ms-item input[type=checkbox]{accent-color:#1a2c52;width:12px;height:12px;flex-shrink:0}
+.ms-sep{border-bottom:1px solid #e4e9f2;margin:2px 0}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:12px}
+.card{background:#fff;border-radius:8px;padding:11px 12px 9px;border:1px solid #e4e9f2}
+.card-lbl{font-size:9px;font-weight:700;color:#7a8aaa;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.card-accent{height:2px;width:20px;border-radius:2px;margin-bottom:6px}
+.card-pct{font-size:24px;font-weight:700;line-height:1;margin-bottom:3px}
+.card-counts{font-size:10px;color:#7a8aaa;line-height:1.4}
+.card-counts b{color:#1a2340;font-weight:600}
+.acc-dk{background:#1a2c52}.acc-gr{background:#1e6b3a}.acc-or{background:#b86e0a}.acc-rd{background:#a82828}.acc-gy{background:#7a8aaa}
+
+/* SEC */
+.sec-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.sec-ttl{font-size:9px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap}
+.sec-line{flex:1;height:1px;background:#dce3ef;min-width:6px}
+.leg-item{display:flex;align-items:center;gap:4px}
+.leg-dot{width:7px;height:7px;border-radius:50%}
+.leg-sq{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.leg-lbl{font-size:10px;color:#5a6a8a}
+
+/* TOGGLE */
+.toggle-wrap{display:flex;border:1px solid #dce3ef;border-radius:5px;overflow:hidden;flex-shrink:0}
+.tog-btn{background:#fff;border:none;padding:3px 10px;font-size:10px;font-weight:600;color:#7a8aaa;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.tog-btn.active{background:#1a2c52;color:#fff}
+
+/* CHARTS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.chart-box{background:#fff;border:1px solid #e4e9f2;border-radius:8px;padding:10px 12px 8px}
+.chart-box-full{background:#fff;border:1px solid #e4e9f2;border-radius:8px;padding:10px 12px 8px;margin-bottom:12px}
+
+/* RESUMO TABLES */
+.resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.resumo-box{background:#fff;border:1px solid #e4e9f2;border-radius:8px;overflow:hidden}
+.resumo-hdr{background:#f6f8fc;padding:5px 11px;border-bottom:1px solid #e4e9f2}
+.resumo-hdr-ttl{font-size:9px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.6px}
+.rtable{width:100%;border-collapse:collapse}
+.rtable th{background:#f6f8fc;color:#5a6a8a;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-bottom:1px solid #e4e9f2;white-space:nowrap;vertical-align:middle}
+.rtable th:first-child{text-align:left}.rtable th:not(:first-child){text-align:center}
+.rtable td{padding:0 7px;border-bottom:1px solid #f0f2f5;white-space:nowrap;font-size:11px;height:16px;line-height:16px;vertical-align:middle}
+.rtable td:first-child{text-align:left;color:#1a2340;font-weight:500}
+.rtable td:not(:first-child){text-align:center}
+.rtable tr:last-child td{border-bottom:none}.rtable tr:hover td{background:#f8fafd}
+
+/* MAIN TABLE */
+.tbl-controls{display:flex;gap:7px;align-items:center;margin-bottom:7px;flex-wrap:wrap}
+.srch{flex:1;min-width:150px;max-width:240px;background:#fff;border:1px solid #dce3ef;border-radius:5px;color:#1a2340;padding:4px 7px 4px 26px;font-size:11px;font-family:'Inter',sans-serif;outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%237a8aaa' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:7px center}
+.srch:focus{border-color:#1a2c52;outline:none}
+.fsel{background:#fff;border:1px solid #dce3ef;border-radius:5px;color:#1a2340;padding:4px 7px;font-size:10px;font-family:'Inter',sans-serif;outline:none;cursor:pointer}
+.cnt-badge{margin-left:auto;font-size:9px;color:#7a8aaa;background:#fff;border:1px solid #dce3ef;border-radius:20px;padding:2px 8px}
+.tbl-wrap{background:#fff;border:1px solid #e4e9f2;border-radius:8px;overflow:hidden}
+.tbl-scroll{overflow-x:auto;max-height:570px;overflow-y:auto}
+
+/* TABELA base */
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead{position:sticky;top:0;z-index:2}
+th{background:#f6f8fc;color:#5a6a8a;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 6px;border-bottom:1px solid #e4e9f2;white-space:nowrap;text-align:left;vertical-align:middle}
+th.c{text-align:center}
+td{padding:0 6px;border-bottom:1px solid #f0f2f5;white-space:nowrap;color:#1a2340;font-size:10px;height:16px;line-height:16px;vertical-align:middle}
+td.c{text-align:center}
+tr:hover td{background:#f8fafd}
+tr:last-child td{border-bottom:none}
+
+/* day cells */
+.d-ok{background:#e8f5ee;color:#1e6b3a;font-weight:700;text-align:center}
+.d-warn{background:#fef6e4;color:#7a5000;font-weight:700;text-align:center}
+.d-bad{background:#fdecea;color:#a82828;font-weight:700;text-align:center}
+.d-none{background:#6b7280;color:#fff;text-align:center;font-weight:600}
+.d-total{font-weight:700;text-align:center;border-left:2px solid #b8cce8;border-right:1px solid #dce3ef}
+.d-t95{background:#1e6b3a;color:#fff}
+.d-t90{background:#3ab06b;color:#fff}
+.d-t80{background:#fff3cd;color:#7a5000}
+.d-tbad{background:#f8d7da;color:#842029}
+.d-tna{background:#eef2fb;color:#7a8aaa}
+
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700}
+.b-ok{background:#e6f5ed;color:#1e6b3a;border:1px solid #b4dfc4}
+.b-wn{background:#fef6e4;color:#7a5000;border:1px solid #f0d08a}
+.b-bd{background:#fdecea;color:#a82828;border:1px solid #f0b4b4}
+.b-bl{background:#eaf0fb;color:#1a2c52;border:1px solid #b8cce8}
+.b-gy{background:#f0f2f5;color:#7a8aaa;border:1px solid #dce3ef}
+
+.pct-cell{display:flex;align-items:center;gap:4px}
+.pct-track{width:34px;height:3px;background:#e4e9f2;border-radius:2px;overflow:hidden;flex-shrink:0}
+.pct-fill{height:100%;border-radius:2px}
+.pct-val{font-size:10px;font-weight:700;min-width:30px}
+
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:5px 11px;border-top:1px solid #e4e9f2;background:#fafbfd}
+.pg-info{font-size:9px;color:#7a8aaa}
+.pg-btns{display:flex;gap:2px}
+.pg-btn{background:#fff;border:1px solid #dce3ef;color:#1a2340;padding:2px 7px;border-radius:4px;font-size:9px;cursor:pointer;font-family:'Inter',sans-serif}
+.pg-btn:hover:not(:disabled){border-color:#1a2c52;color:#1a2c52}
+.pg-btn:disabled{opacity:.3;cursor:default}
+.pg-btn.active{background:#1a2c52;color:#fff;border-color:#1a2c52;font-weight:700}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#f0f2f5}
+::-webkit-scrollbar-thumb{background:#dce3ef;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-top">
+    <div><div class="hdr-title">GPS | Promotores</div>
+    <div class="hdr-sub">Bases atualizadas em 07/05/2026 &nbsp;·&nbsp; Excluídas marcações não planejadas</div></div>
+    <button class="btn-menu" onclick="window.location.href='index.html'">← Menu principal</button>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('resumo',this)">Resumo</button>
+    <button class="nav-tab" onclick="showPage('status',this)">Status | Promotores</button>
+    <button class="nav-tab" onclick="showPage('jornada',this)">Jornada | Promotores</button>
+  </div>
+</div>
+
+<!-- RESUMO -->
+<div class="page active" id="page-resumo">
+  <div class="filt-box" style="margin-top:12px">
+    <div class="filt-lbl">Filtros</div>
+    <div class="filt-row">
+      <div class="fg"><label>Mês</label>
+        <div class="multi-sel"><button class="ms-btn" onclick="toggleMs('mes')" id="ms-mes-btn">Todos ▾</button>
+          <div class="ms-dd" id="ms-mes-dd"></div></div></div>
+      <div class="fg"><label>Semana</label>
+        <div class="multi-sel"><button class="ms-btn" onclick="toggleMs('sem')" id="ms-sem-btn">Todas ▾</button>
+          <div class="ms-dd" id="ms-sem-dd"></div></div></div>
+      <div class="fg"><label>Supervisor</label>
+        <select id="f-sup" onchange="onSupChange()"><option value="">Todos</option></select></div>
+      <div class="fg"><label>CDD</label>
+        <select id="f-cdd" onchange="applyFilters()"><option value="">Todos</option></select></div>
+      <button class="btn-clear" onclick="clearFilters()">Limpar filtros</button>
+    </div>
+  </div>
+
+  <div class="sec-row"><span class="sec-ttl">Visão Geral</span><div class="sec-line"></div></div>
+  <div class="cards-grid" id="cardsGrid"></div>
+
+  <div class="two-col">
+    <!-- GEO -->
+    <div class="chart-box">
+      <div class="sec-row" style="margin-bottom:3px">
+        <span class="sec-ttl">% GPS OK por GEO</span><div class="sec-line"></div>
+        <div class="leg-item"><div class="leg-sq" style="background:#1a2c52"></div><span class="leg-lbl">Geral</span></div>
+        <div class="leg-item"><div class="leg-sq" style="background:#c47a1a"></div><span class="leg-lbl">Score 5</span></div>
+      </div>
+      <canvas id="chartGeo" height="120"></canvas>
+    </div>
+    <!-- SEMANAL -->
+    <div class="chart-box">
+      <div class="sec-row" style="margin-bottom:3px">
+        <span class="sec-ttl">Evolução Semanal — % GPS OK</span><div class="sec-line"></div>
+        <div class="leg-item"><div class="leg-dot" style="background:#1a2c52"></div><span class="leg-lbl">Geral</span></div>
+        <div class="leg-item"><div class="leg-dot" style="background:#c47a1a"></div><span class="leg-lbl">Score 5</span></div>
+      </div>
+      <canvas id="chartWeek" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- DIÁRIO -->
+  <div class="chart-box-full">
+    <div class="sec-row" style="margin-bottom:3px">
+      <span class="sec-ttl">Evolução Diária — % GPS OK</span><div class="sec-line"></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#1a2c52"></div><span class="leg-lbl">Geral</span></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#c47a1a"></div><span class="leg-lbl">Score 5</span></div>
+    </div>
+    <canvas id="chartLine" height="55"></canvas>
+  </div>
+
+  <!-- CDD/SUP -->
+  <div class="chart-box-full">
+    <div class="sec-row" style="margin-bottom:5px">
+      <div class="toggle-wrap" id="togCDD">
+        <button class="tog-btn active" onclick="setTogCDD('cdd')">CDD</button>
+        <button class="tog-btn" onclick="setTogCDD('sup')">Supervisor</button>
+      </div>
+      <div class="sec-line"></div>
+      <div id="barTitle" style="font-size:9px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap"></div>
+      <div class="sec-line"></div>
+      <div class="toggle-wrap" id="togCDDMode">
+        <button class="tog-btn active" onclick="setTogCDDMode('geral')">Geral</button>
+        <button class="tog-btn" onclick="setTogCDDMode('score5')">Score 5</button>
+      </div>
+    </div>
+    <canvas id="chartBar" height="50"></canvas>
+  </div>
+
+  <div class="sec-row"><span class="sec-ttl">Resumo por CDD</span><div class="sec-line"></div><span class="sec-ttl">Resumo por Supervisor</span><div class="sec-line" style="flex:0;min-width:0"></div></div>
+  <div class="resumo-grid">
+    <div class="resumo-box"><div class="resumo-hdr"><span class="resumo-hdr-ttl">Por CDD</span></div><table class="rtable" id="tbl-r-cdd"></table></div>
+    <div class="resumo-box"><div class="resumo-hdr"><span class="resumo-hdr-ttl">Por Supervisor</span></div><table class="rtable" id="tbl-r-sup"></table></div>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="page" id="page-status">
+  <div style="margin-top:12px">
+    <div class="filt-box">
+      <div class="filt-lbl">Filtros</div>
+      <div class="filt-row">
+        <div class="fg"><label>Semana</label>
+          <div class="multi-sel"><button class="ms-btn" onclick="toggleMs('sem2')" id="ms-sem2-btn">Todas ▾</button>
+            <div class="ms-dd" id="ms-sem2-dd"></div></div></div>
+        <div class="fg"><label>Supervisor</label>
+          <select id="st2-sup" onchange="onSt2SupChange()"><option value="">Todos</option></select></div>
+        <div class="fg"><label>CDD</label>
+          <select id="st2-cdd" onchange="filterStatusTab()"><option value="">Todos</option></select></div>
+
+        <input class="srch" id="st2-srch" placeholder="Nome..." oninput="filterStatusTab()" style="margin-top:16px">
+        <button class="btn-clear" onclick="clearStatusFilters()">Limpar filtros</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span class="cnt-badge" id="st2-cnt" style="margin-left:0"></span>
+    </div>
+    <div class="tbl-wrap">
+      <div style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 280px)">
+        <table id="tbl-status2" style="border-collapse:collapse;font-size:11px;table-layout:fixed;width:auto"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JORNADA -->
+<div class="page" id="page-jornada">
+  <div style="margin-top:12px">
+    <div class="filt-box">
+      <div class="filt-lbl">Filtros</div>
+      <div class="filt-row">
+        <div class="fg"><label>Semana</label>
+          <div class="multi-sel"><button class="ms-btn" onclick="toggleMs('semJ')" id="ms-semJ-btn">Todas ▾</button>
+            <div class="ms-dd" id="ms-semJ-dd"></div></div></div>
+        <div class="fg"><label>Supervisor</label>
+          <select id="jr-sup" onchange="onJrSupChange()"><option value="">Todos</option></select></div>
+        <div class="fg"><label>CDD</label>
+          <select id="jr-cdd" onchange="filterJornada()"><option value="">Todos</option></select></div>
+        <input class="srch" id="jr-srch" placeholder="Nome..." oninput="filterJornada()" style="margin-top:16px">
+        <button class="btn-clear" onclick="clearJornadaFilters()">Limpar filtros</button>
+      </div>
+    </div>
+    <div style="margin-bottom:6px">
+      <span class="cnt-badge" id="cnt-jornada" style="margin-left:0"></span>
+    </div>
+    <div class="tbl-wrap">
+      <div style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 280px)">
+        <table id="tbl-jornada" style="border-collapse:collapse;font-size:11px;table-layout:fixed;width:auto"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
