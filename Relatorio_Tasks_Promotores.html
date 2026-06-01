@@ -136,7 +136,7 @@ tr:hover td{background:#f8fafd}tr:last-child td{border-bottom:none}
   <div class="hdr-top">
     <div><div class="hdr-title">Tasks | Promotores</div>
     <div class="hdr-sub">INDICADORES SPOT | VIZI SP &nbsp;·&nbsp; Bases atualizadas em 01/06/2026</div></div>
-    <button class="btn-menu" onclick="window.location.href='index.html'">← Menu principal</button>
+    <button class="btn-menu" onclick="window.location.href=(localStorage.getItem('vizi_index')||'index.html')">← Menu principal</button>
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('resumo',this)">Resumo</button>

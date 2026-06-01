@@ -91,7 +91,7 @@ tr:last-child td{border-bottom:none}
   <div class="hdr-top">
     <div><div class="hdr-title">Painel de Promotores</div>
     <div class="hdr-sub">INDICADORES SPOT | VIZI SP &nbsp;&middot;&nbsp; Bases atualizadas em 01/06/2026</div></div>
-    <button class="btn-menu" onclick="window.location.href='index.html'">&#8592; Menu principal</button>
+    <button class="btn-menu" onclick="window.location.href=(localStorage.getItem('vizi_index')||'index.html')">&#8592; Menu principal</button>
   </div>
   <div class="nav-tabs"><button class="nav-tab active">GPS + Tasks + Jornada &mdash; Acumulado</button></div>
 </div>
@@ -229,19 +229,23 @@ function minToDur(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String
 
 function calcAcum(pGps,pTask,pJrn,semSet){
   var allSems=(semSet.size===ALL_SEMS.length);
-  var gV=[],tV=[],jV=[];
+  /* GPS: somar ok e total (igual ao GPS | Promotores) */
+  var gOk=0,gTot=0;
+  /* Tasks: somar val e total (igual ao Tasks | Promotores) */
+  var tVal=0,tTot=0;
+  var jV=[];
   if(pGps&&pGps.days){
     for(var k in pGps.days){
       var d=pGps.days[k];
       if(!allSems&&!semSet.has(d.week)) continue;
-      if(d.total>0) gV.push(d.pct);
+      if(d.total>0){ gOk+=d.ok; gTot+=d.total; }
     }
   }
   if(pTask&&pTask.days){
     for(var k in pTask.days){
       var d=pTask.days[k];
       if(!allSems&&!semSet.has(d.week)) continue;
-      tV.push(d.pct);
+      if(d.total>0){ tVal+=d.val; tTot+=d.total; }
     }
   }
   if(pJrn&&pJrn.days){
@@ -251,13 +255,14 @@ function calcAcum(pGps,pTask,pJrn,semSet){
       var m=durToMin(d.dur); if(m) jV.push(m);
     }
   }
-  var gps  = gV.length?Math.round(avg(gV)*10)/10:null;
-  var task = tV.length?Math.round(avg(tV)*10)/10:null;
+  var gps  = gTot>0?Math.round(gOk/gTot*1000)/10:null;
+  var task = tTot>0?Math.round(tVal/tTot*1000)/10:null;
   var jrn  = jV.length?minToDur(Math.round(avg(jV))):null;
   return{gps:gps,task:task,jrn:jrn,
          gpsRaw:gps!==null?gps:-1,
          taskRaw:task!==null?task:-1,
-         jrnMin:jV.length?avg(jV):-1};
+         jrnMin:jV.length?avg(jV):-1,
+         gOk:gOk,gTot:gTot,tVal:tVal,tTot:tTot};
 }
 
 /* BASE_ROWS */
@@ -558,14 +563,14 @@ function renderCards(){
   var totalFiltro=withData.length;
   var trab=0; withData.forEach(function(r){ if(r.sit==='TRABALHANDO') trab++; });
 
-  var gV=[],tV=[],jV=[];
+  var gOkSum=0,gTotSum=0,tValSum=0,tTotSum=0,jV=[];
   withData.forEach(function(r){
-    if(r.acum.gps!==null) gV.push(r.acum.gps);
-    if(r.acum.task!==null) tV.push(r.acum.task);
+    gOkSum+=(r.acum.gOk||0); gTotSum+=(r.acum.gTot||0);
+    tValSum+=(r.acum.tVal||0); tTotSum+=(r.acum.tTot||0);
     if(r.acum.jrnMin>0) jV.push(r.acum.jrnMin);
   });
-  var ag=gV.length?Math.round(gV.reduce(function(a,b){return a+b},0)/gV.length*10)/10:null;
-  var at=tV.length?Math.round(tV.reduce(function(a,b){return a+b},0)/tV.length*10)/10:null;
+  var ag=gTotSum>0?Math.round(gOkSum/gTotSum*1000)/10:null;
+  var at=tTotSum>0?Math.round(tValSum/tTotSum*1000)/10:null;
   var aj=jV.length?minToDur(Math.round(jV.reduce(function(a,b){return a+b},0)/jV.length)):'—';
 
   var per=buildPeriodCard();
