@@ -161,7 +161,8 @@ STATUS_DATA.forEach(function(p){
     clone.days={};
     for(var k in p.days){
       clone.days[k]={ok:p.days[k].ok,total:p.days[k].total,
-                     pct:p.days[k].pct,mes:p.days[k].mes,week:p.days[k].week};
+                     pct:p.days[k].pct,mes:p.days[k].mes,week:p.days[k].week,
+                     ok_s5:(p.days[k].ok_s5||0),total_s5:(p.days[k].total_s5||0)};
     }
     clone._cddDays={};
     clone._cddDays[p.cdd]=(Object.keys(p.days)).length;
@@ -174,13 +175,16 @@ STATUS_DATA.forEach(function(p){
       if(!base.days[k]){
         /* dia exclusivo do 2º CDD — adicionar */
         base.days[k]={ok:daysB[k].ok,total:daysB[k].total,
-                      pct:daysB[k].pct,mes:daysB[k].mes,week:daysB[k].week};
+                      pct:daysB[k].pct,mes:daysB[k].mes,week:daysB[k].week,
+                      ok_s5:(daysB[k].ok_s5||0),total_s5:(daysB[k].total_s5||0)};
       } else {
         /* dia sobreposto — somar ok e total, recalcular pct */
         base.days[k].ok+=daysB[k].ok;
         base.days[k].total+=daysB[k].total;
         base.days[k].pct=base.days[k].total>0
           ?Math.round(base.days[k].ok/base.days[k].total*1000)/10:0;
+        base.days[k].ok_s5=(base.days[k].ok_s5||0)+(daysB[k].ok_s5||0);
+        base.days[k].total_s5=(base.days[k].total_s5||0)+(daysB[k].total_s5||0);
       }
     }
     /* Decidir CDD principal: o com mais dias */
