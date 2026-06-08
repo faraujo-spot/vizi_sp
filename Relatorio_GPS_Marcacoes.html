@@ -149,7 +149,7 @@ tr:last-child td{border-bottom:none}
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('resumo',this)">Resumo</button>
     <button class="nav-tab" onclick="showPage('status',this)">Status | Promotores</button>
-    <button class="nav-tab" onclick="showPage('jornada',this)">Jornada | Promotores</button>
+    <button class="nav-tab" onclick="showPage('jornada',this)" style="display:none">Jornada | Promotores</button>
   </div>
 </div>
 
@@ -261,7 +261,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <!-- JORNADA -->
-<div class="page" id="page-jornada">
+<div class="page" id="page-jornada" style="display:none">
   <div style="margin-top:12px">
     <div class="filt-box">
       <div class="filt-lbl">Filtros</div>
@@ -967,16 +967,6 @@ function filterJornada(){
     if(q&&!p.nome.toLowerCase().includes(q)&&!(p.cdd||'').toLowerCase().includes(q)) return false;
     if(!allS&&!activeDates.some(d=>p.days[d])) return false;
     return true;
-  }).sort((a,b)=>{
-    const sA=a.sup||'', sB=b.sup||'';
-    if(sA!==sB) return sA.localeCompare(sB);
-    const cA=a.cdd||'', cB=b.cdd||'';
-    if(cA!==cB) return cA.localeCompare(cB);
-    const toM=t=>{if(!t||t==='00:00')return -1;const[h,m]=t.split(':');return+h*60+ +m;};
-    const mA=toM(a.avg), mB=toM(b.avg);
-    if(mA<0) return 1; if(mB<0) return -1;
-    if(mA===mB) return a.nome.localeCompare(b.nome);
-    return mB-mA;
   });
   renderJornada();
 }
