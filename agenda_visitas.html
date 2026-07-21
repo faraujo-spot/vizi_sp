@@ -353,6 +353,8 @@
   </main>
 </div>
 
+<iframe name="syncFrame" id="syncFrame" style="display:none;" title="sync"></iframe>
+
 <div id="modalOverlay" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <p id="modalMessage"></p>
@@ -478,15 +480,26 @@
   }
 
   function syncToSheet(sup){
-    var payload = buildSyncPayload(sup);
-    // O Apps Script não devolve cabeçalho CORS na resposta do doPost, então usamos
-    // no-cors: o envio funciona e é processado no Google, só não dá pra ler a confirmação de volta.
-    return fetch(SYNC_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
-    }).then(function(){ return true; });
+    // fetch(no-cors) perde o body do POST no redirecionamento interno do Apps Script.
+    // Envio via formulário oculto + iframe evita esse problema (é navegação real, não fetch).
+    return new Promise(function(resolve){
+      var payload = buildSyncPayload(sup);
+      var iframe = document.getElementById("syncFrame");
+      var form = document.createElement("form");
+      form.method = "POST";
+      form.action = SYNC_URL;
+      form.target = "syncFrame";
+      form.style.display = "none";
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "payload";
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      setTimeout(function(){ resolve(true); }, 900);
+    });
   }
   function formatSavedAt(ms){
     var d = new Date(ms);
