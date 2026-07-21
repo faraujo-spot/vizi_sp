@@ -411,6 +411,12 @@
     var iChave = findCol(header, ["CHAVE"]);
     var iLoja = findCol(header, ["LOJA"]);
     var iEndereco = findCol(header, ["ENDEREÇO","ENDERECO"]);
+    if (iEndereco === -1){
+      // fallback tolerante a problema de codificação do "Ç" (compara só o prefixo sem acento)
+      for (var k=0;k<header.length;k++){
+        if (header[k].toUpperCase().replace(/﻿/g,"").trim().indexOf("ENDERE") === 0){ iEndereco = k; break; }
+      }
+    }
     var iCidade = findCol(header, ["CIDADE"]);
     var iRota = findCol(header, ["ROTA"]);
 
