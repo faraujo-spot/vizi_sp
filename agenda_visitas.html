@@ -14,6 +14,8 @@
     --success:#3c7156;
     --success-soft:rgba(60,113,86,0.13);
     --danger:#a1332a;
+    --daysel-bg:#1d3557;
+    --daysel-ink:#ffffff;
     --shadow:0 1px 2px rgba(35,32,25,0.06), 0 8px 24px -12px rgba(35,32,25,0.18);
     --radius:10px;
     --mono: ui-monospace, "SF Mono", "Cascadia Mono", "IBM Plex Mono", Consolas, monospace;
@@ -34,6 +36,8 @@
       --success:#73b291;
       --success-soft:rgba(115,178,145,0.16);
       --danger:#e0776b;
+      --daysel-bg:#3a6ea5;
+      --daysel-ink:#ffffff;
       --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
     }
   }
@@ -51,6 +55,8 @@
     --success:#73b291;
     --success-soft:rgba(115,178,145,0.16);
     --danger:#e0776b;
+    --daysel-bg:#3a6ea5;
+    --daysel-ink:#ffffff;
     --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
   }
   :root[data-theme="light"]{
@@ -67,6 +73,8 @@
     --success:#3c7156;
     --success-soft:rgba(60,113,86,0.13);
     --danger:#a1332a;
+    --daysel-bg:#1d3557;
+    --daysel-ink:#ffffff;
     --shadow:0 1px 2px rgba(35,32,25,0.06), 0 8px 24px -12px rgba(35,32,25,0.18);
   }
 
@@ -130,6 +138,8 @@
   .btn.ghost:hover{ color:var(--ink); border-color:var(--line); }
   .btn.small{ padding:6px 10px; font-size:12px; }
   .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn.danger{ background:transparent; border-color:var(--danger); color:var(--danger); }
+  .btn.danger:hover{ background:var(--danger); color:#fff; }
   #intakeActions{ display:flex; justify-content:flex-end; margin-top:14px; }
   #intakeError{ color:var(--danger); font-size:12.5px; margin-top:10px; min-height:1em; }
   .fileMeta{ font-size:12.5px; color:var(--success); margin-top:10px; display:none; align-items:center; gap:6px; }
@@ -149,11 +159,17 @@
     width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line);
     background:var(--surface-2); color:var(--ink); font-size:13.5px; font-weight:600;
   }
+  .filter-select{
+    width:100%; padding:7px 9px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-size:12.5px;
+  }
   .stat-block{ display:flex; flex-direction:column; gap:8px; }
   .stat-row{ display:flex; align-items:center; justify-content:space-between; font-size:13px; }
   .stat-row .n{ font-variant-numeric:tabular-nums; font-weight:700; }
-  .bar{ height:6px; border-radius:4px; background:var(--line-soft); overflow:hidden; }
+  .bar{ height:6px; border-radius:4px; background:var(--line-soft); overflow:hidden; flex:1; }
   .bar > i{ display:block; height:100%; background:var(--success); border-radius:4px 0 0 4px; transition:width .2s; }
+  .bar-row{ display:flex; align-items:center; gap:8px; }
+  .bar-pct{ font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; min-width:30px; text-align:right; }
   .day-mini{ display:flex; gap:5px; }
   .day-mini .d{
     flex:1; text-align:center; font:11px var(--mono); padding:5px 0; border-radius:5px;
@@ -174,26 +190,6 @@
   .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
   .topbar h1{ font-size:19px; margin:2px 0 2px; letter-spacing:-.01em; }
   .topbar .sub{ color:var(--muted); font-size:13px; }
-  .view-toggle{ display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
-  .view-toggle button{
-    appearance:none; border:none; background:var(--surface); color:var(--muted); padding:8px 14px;
-    font-size:12.5px; font-weight:700; cursor:pointer; border-right:1px solid var(--line);
-  }
-  .view-toggle button:last-child{ border-right:none; }
-  .view-toggle button.active{ background:var(--accent-soft); color:var(--accent); }
-  .toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
-  input#search{
-    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--line);
-    background:var(--surface); color:var(--ink); font-size:13px;
-  }
-
-  .cdd-group{ margin-bottom:22px; }
-  .cdd-head{
-    display:flex; align-items:baseline; gap:8px; margin-bottom:8px; padding-bottom:6px;
-    border-bottom:1px solid var(--line);
-  }
-  .cdd-head h3{ font-size:13px; margin:0; letter-spacing:.02em; }
-  .cdd-head .count{ font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
 
   .store-row{
     display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
@@ -211,28 +207,51 @@
     cursor:pointer; transition:all .12s;
   }
   .day-btn:hover{ border-color:var(--accent); color:var(--ink); }
-  .day-btn.on{ background:var(--success); border-color:var(--success); color:#fff; }
+  .day-btn.on{ background:var(--daysel-bg); border-color:var(--daysel-bg); color:var(--daysel-ink); font-weight:700; }
+  .day-btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .day-btn:disabled:hover{ border-color:var(--line); color:var(--muted); }
+
+  .lock-banner{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px;
+    padding:10px 14px; margin-bottom:18px; font-size:13px; color:var(--ink);
+  }
 
   .empty-state{ color:var(--muted); font-size:13px; padding:30px 0; text-align:center; }
 
-  /* Week board view */
-  .board{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; align-items:start; }
-  .board-col{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px; min-height:120px; }
+  .board{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; align-items:start; margin-bottom:8px; }
+  .board-col{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px; min-height:64px; }
   .board-col h4{
     margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
     display:flex; justify-content:space-between; align-items:center;
   }
   .board-col h4 .n{ background:var(--surface-2); border-radius:99px; padding:1px 7px; font:11px var(--mono); color:var(--ink); }
   .board-card{
-    background:var(--surface-2); border:1px solid var(--line-soft); border-radius:7px; padding:7px 9px; margin-bottom:6px;
-    font-size:12px;
+    background:var(--surface-2); border:1px solid var(--line-soft); border-radius:7px; padding:7px 9px;
+    margin-bottom:6px; font-size:12px;
   }
   .board-card .l{ font-weight:700; }
   .board-card .c{ color:var(--muted); font-size:11px; }
-  .board-empty{ color:var(--muted); font-size:11.5px; text-align:center; padding:14px 0; }
+  .board-empty{ color:var(--muted); font-size:11.5px; text-align:center; padding:10px 0; }
 
-  .pending-strip{ margin-top:8px; }
-  .pending-strip summary{ cursor:pointer; font-size:12.5px; color:var(--muted); font-weight:700; }
+  .group-head{
+    display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+    margin:22px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--line);
+    font-size:13px; font-weight:700; letter-spacing:.02em;
+  }
+  .group-head:first-child{ margin-top:0; }
+  .group-head .count{ font-size:11.5px; color:var(--muted); font-weight:400; font-variant-numeric:tabular-nums; }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,18,14,0.5); display:flex; align-items:center; justify-content:center;
+    z-index:1000; padding:20px;
+  }
+  .modal-box{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+    padding:20px; max-width:380px; width:100%;
+  }
+  .modal-box p{ margin:0 0 16px; font-size:13.5px; color:var(--ink); line-height:1.5; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; }
 
   @media (max-width: 860px){
     #app.show{ flex-direction:column; }
@@ -279,7 +298,13 @@
     <div class="stat-block">
       <div class="stat-row"><span>PDVs na carteira</span><span class="n" id="statTotal">0</span></div>
       <div class="stat-row"><span>Agendados</span><span class="n" id="statDone">0</span></div>
-      <div class="bar"><i id="statBar" style="width:0%"></i></div>
+      <div class="bar-row"><div class="bar"><i id="statBar" style="width:0%"></i></div><span class="bar-pct" id="statPct">0%</span></div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-row"><span>Promotores na carteira</span><span class="n" id="statPromoTotal">0</span></div>
+      <div class="stat-row"><span>Cobertos</span><span class="n" id="statPromoDone">0</span></div>
+      <div class="bar-row"><div class="bar"><i id="statPromoBar" style="width:0%"></i></div><span class="bar-pct" id="statPromoPct">0%</span></div>
     </div>
 
     <div>
@@ -292,11 +317,20 @@
       <div class="cdd-filters" id="cddFilters"></div>
     </div>
 
+    <div>
+      <label for="cidadeFilterSel" class="eyebrow" style="display:block;margin-bottom:6px;">Cidade</label>
+      <select class="filter-select" id="cidadeFilterSel"></select>
+    </div>
+
+    <div>
+      <label for="promotorFilterSel" class="eyebrow" style="display:block;margin-bottom:6px;">Promotor</label>
+      <select class="filter-select" id="promotorFilterSel"></select>
+    </div>
+
     <div class="side-actions">
-      <button class="btn small" id="copyBtn">Copiar agenda</button>
-      <button class="btn small primary" id="downloadBtn" disabled>Exportar Excel</button>
-      <div class="export-hint" id="exportHint">Agende todos os PDVs para liberar a exportação</div>
-      <button class="btn small ghost" id="resetBtn">Atualizar dados</button>
+      <button class="btn primary" id="saveBtn" disabled style="width:100%;justify-content:center;">Gravar agenda</button>
+      <div class="export-hint" id="saveHint">Marque pelo menos um dia para gravar</div>
+      <button class="btn small ghost" id="downloadBtn" disabled title="Baixa uma cópia em Excel da agenda atual">Exportar Excel</button>
     </div>
   </aside>
 
@@ -305,21 +339,28 @@
       <div>
         <div class="eyebrow" id="supEyebrow">Supervisor</div>
         <h1 id="supName">—</h1>
-        <div class="sub">Toque no dia da semana em cada PDV para marcar a visita recorrente.</div>
+        <div class="sub">Toque no(s) dia(s) da semana de cada PDV para marcar as visitas — uma loja pode ter mais de um dia. Toque de novo para desmarcar.</div>
       </div>
-      <div class="view-toggle">
-        <button id="viewListBtn" class="active">Lista</button>
-        <button id="viewBoardBtn">Semana</button>
-      </div>
+      <button class="btn small danger" id="clearBtn">Limpar rota</button>
     </div>
 
-    <div class="toolbar" id="listToolbar">
-      <input id="search" type="text" placeholder="Buscar por loja ou cidade…" />
-    </div>
+    <div id="lockBanner"></div>
 
-    <div id="listView"></div>
-    <div id="boardView" style="display:none;"></div>
+    <div class="eyebrow" style="margin-bottom:8px;">Resumo da semana</div>
+    <div id="weekSummary"></div>
+
+    <div id="pdvList"></div>
   </main>
+</div>
+
+<div id="modalOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <p id="modalMessage"></p>
+    <div class="modal-actions">
+      <button class="btn small ghost" id="modalCancel">Cancelar</button>
+      <button class="btn small danger" id="modalConfirm">Confirmar</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -334,15 +375,18 @@
     {code:"SAB", label:"Sáb", idx:5}
   ];
   var STORE_KEY = "spot_agenda_visitas_v1";
+  var SAVED_KEY = "spot_agenda_gravada_v1";
   var DATA_KEY = "spot_agenda_dados_v1";
   var DATA_URL = "agenda_dados.csv";
+  var SYNC_URL = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
 
   var rows = [];
-  var assignments = {}; // { [supervisor]: { [chave]: dayCode } }
+  var assignments = {}; // { [supervisor]: { [chave]: [dayCode, ...] } }
+  var savedState = {}; // { [supervisor]: { savedAt: 1234567890, snapshot: "{...}" } }
   var currentSup = null;
   var cddFilter = "TODOS";
-  var searchTerm = "";
-  var view = "lista";
+  var cidadeFilter = "TODAS";
+  var promotorFilter = "TODOS";
 
   function norm(s){ return (s||"").toString().trim(); }
 
@@ -399,6 +443,57 @@
     localStorage.setItem(STORE_KEY, JSON.stringify(assignments));
   }
 
+  function loadSavedState(){
+    try { return JSON.parse(localStorage.getItem(SAVED_KEY) || "{}"); } catch(e){ return {}; }
+  }
+  function persistSavedState(){
+    localStorage.setItem(SAVED_KEY, JSON.stringify(savedState));
+  }
+  function currentSnapshot(sup){
+    return JSON.stringify(assignments[sup] || {});
+  }
+  function hasUnsavedChanges(sup){
+    var saved = savedState[sup];
+    if (!saved) return currentSnapshot(sup) !== "{}";
+    return saved.snapshot !== currentSnapshot(sup);
+  }
+  function isLocked(sup){
+    return !!(savedState[sup] && savedState[sup].locked);
+  }
+
+  function buildSyncPayload(sup){
+    var stores = storesForSupervisor(sup);
+    var entries = [];
+    stores.forEach(function(s){
+      getDays(sup, s.chave).forEach(function(d){
+        var dayLabel = DAYS.filter(function(x){ return x.code===d; })[0].label;
+        entries.push({ dia: dayLabel, cdd: s.cdd, loja: s.loja, cidade: s.cidade, endereco: s.endereco, promotores: s.promotores.join(" | ") });
+      });
+    });
+    var done = stores.filter(function(s){ return getDays(sup, s.chave).length > 0; }).length;
+    var d = new Date();
+    function pad(n){ return n<10 ? "0"+n : ""+n; }
+    var semana = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+    return { supervisor: sup, semana: semana, totalPdvs: stores.length, totalAgendados: done, entries: entries };
+  }
+
+  function syncToSheet(sup){
+    var payload = buildSyncPayload(sup);
+    return fetch(SYNC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(function(res){ return res.json(); }).then(function(json){
+      if (!json.ok) throw new Error(json.error || "erro desconhecido");
+      return true;
+    });
+  }
+  function formatSavedAt(ms){
+    var d = new Date(ms);
+    function pad(n){ return n<10 ? "0"+n : ""+n; }
+    return pad(d.getDate())+"/"+pad(d.getMonth()+1)+" às "+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+
   function storesForSupervisor(sup){
     var map = new Map();
     for (var i=0;i<rows.length;i++){
@@ -429,15 +524,64 @@
     return Array.from(s).sort();
   }
 
-  function getDay(sup, chave){
-    return (assignments[sup] && assignments[sup][chave]) || null;
+  function cidadesForSupervisor(sup, cdd){
+    var s = new Set();
+    storesForSupervisor(sup).forEach(function(st){
+      if (cdd !== "TODOS" && st.cdd !== cdd) return;
+      s.add(st.cidade);
+    });
+    return Array.from(s).sort();
   }
-  function setDay(sup, chave, code){
+
+  function promotoresForSupervisor(sup, cdd, cidade){
+    var s = new Set();
+    storesForSupervisor(sup).forEach(function(st){
+      if (cdd !== "TODOS" && st.cdd !== cdd) return;
+      if (cidade !== "TODAS" && st.cidade !== cidade) return;
+      st.promotores.forEach(function(p){ if (p) s.add(p); });
+    });
+    return Array.from(s).sort();
+  }
+
+  function applyFilters(stores){
+    return stores.filter(function(s){
+      if (cddFilter !== "TODOS" && s.cdd !== cddFilter) return false;
+      if (cidadeFilter !== "TODAS" && s.cidade !== cidadeFilter) return false;
+      if (promotorFilter !== "TODOS" && s.promotores.indexOf(promotorFilter) === -1) return false;
+      return true;
+    });
+  }
+
+  function getDays(sup, chave){
+    return (assignments[sup] && assignments[sup][chave]) || [];
+  }
+  function toggleDay(sup, chave, code){
     if (!assignments[sup]) assignments[sup] = {};
-    if (assignments[sup][chave] === code){ delete assignments[sup][chave]; }
-    else { assignments[sup][chave] = code; }
+    var days = assignments[sup][chave] || [];
+    var idx = days.indexOf(code);
+    if (idx > -1) { days = days.slice(0,idx).concat(days.slice(idx+1)); }
+    else { days = days.concat([code]); }
+    if (days.length) assignments[sup][chave] = days;
+    else delete assignments[sup][chave];
     saveAssignments();
     renderAll();
+  }
+
+  function showConfirm(message, onConfirm){
+    var overlay = document.getElementById("modalOverlay");
+    document.getElementById("modalMessage").textContent = message;
+    overlay.style.display = "flex";
+    var confirmBtn = document.getElementById("modalConfirm");
+    var cancelBtn = document.getElementById("modalCancel");
+    function cleanup(){
+      overlay.style.display = "none";
+      confirmBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+    }
+    function onOk(){ cleanup(); onConfirm(); }
+    function onCancel(){ cleanup(); }
+    confirmBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
   }
 
   /* ---------------- rendering ---------------- */
@@ -455,30 +599,68 @@
   function renderSidebar(){
     if (!currentSup) return;
     var stores = storesForSupervisor(currentSup);
-    var filtered = cddFilter === "TODOS" ? stores : stores.filter(function(s){ return s.cdd === cddFilter; });
     var total = stores.length;
-    var done = stores.filter(function(s){ return !!getDay(currentSup, s.chave); }).length;
+    var done = stores.filter(function(s){ return getDays(currentSup, s.chave).length > 0; }).length;
 
     document.getElementById("statTotal").textContent = total;
     document.getElementById("statDone").textContent = done;
-    document.getElementById("statBar").style.width = (total ? Math.round(done/total*100) : 0) + "%";
+    var pdvPct = total ? Math.round(done/total*100) : 0;
+    document.getElementById("statBar").style.width = pdvPct + "%";
+    document.getElementById("statPct").textContent = pdvPct + "%";
 
-    var exportBtn = document.getElementById("downloadBtn");
-    var exportHint = document.getElementById("exportHint");
-    var ready = total > 0 && done === total;
-    exportBtn.disabled = !ready;
-    if (ready){
-      exportHint.textContent = "Agenda completa — pronta para exportar";
-      exportHint.classList.add("ready");
+    var promoterSet = new Set();
+    stores.forEach(function(s){ s.promotores.forEach(function(p){ if (p) promoterSet.add(p); }); });
+    var promoTotal = promoterSet.size;
+    var promoDone = 0;
+    promoterSet.forEach(function(p){
+      var covered = stores.some(function(s){ return s.promotores.indexOf(p) > -1 && getDays(currentSup, s.chave).length > 0; });
+      if (covered) promoDone++;
+    });
+    document.getElementById("statPromoTotal").textContent = promoTotal;
+    document.getElementById("statPromoDone").textContent = promoDone;
+    var promoPct = promoTotal ? Math.round(promoDone/promoTotal*100) : 0;
+    document.getElementById("statPromoBar").style.width = promoPct + "%";
+    document.getElementById("statPromoPct").textContent = promoPct + "%";
+
+    var cidadeSel = document.getElementById("cidadeFilterSel");
+    var cidades = cidadesForSupervisor(currentSup, cddFilter);
+    cidadeSel.innerHTML = '<option value="TODAS">Todas (' + stores.filter(function(s){ return cddFilter==="TODOS" || s.cdd===cddFilter; }).length + ')</option>' +
+      cidades.map(function(c){
+        var n = stores.filter(function(s){ return (cddFilter==="TODOS"||s.cdd===cddFilter) && s.cidade===c; }).length;
+        return '<option value="'+escapeAttr(c)+'">'+escapeHtml(c)+' ('+n+')</option>';
+      }).join("");
+    if (cidades.indexOf(cidadeFilter) === -1) cidadeFilter = "TODAS";
+    cidadeSel.value = cidadeFilter;
+
+    var promotorSel = document.getElementById("promotorFilterSel");
+    var promotores = promotoresForSupervisor(currentSup, cddFilter, cidadeFilter);
+    promotorSel.innerHTML = '<option value="TODOS">Todos (' + promotores.length + ')</option>' +
+      promotores.map(function(p){ return '<option value="'+escapeAttr(p)+'">'+escapeHtml(p)+'</option>'; }).join("");
+    if (promotores.indexOf(promotorFilter) === -1) promotorFilter = "TODOS";
+    promotorSel.value = promotorFilter;
+
+    var ready = done > 0;
+    document.getElementById("downloadBtn").disabled = !ready;
+    document.getElementById("clearBtn").disabled = isLocked(currentSup);
+
+    var saveBtn = document.getElementById("saveBtn");
+    var saveHint = document.getElementById("saveHint");
+    saveBtn.disabled = !ready || isLocked(currentSup);
+    var saved = savedState[currentSup];
+    if (!ready){
+      saveHint.textContent = "Marque pelo menos um dia para gravar";
+      saveHint.classList.remove("ready");
+    } else if (hasUnsavedChanges(currentSup)){
+      saveHint.textContent = saved ? "Alterações não gravadas desde " + formatSavedAt(saved.savedAt) : "Ainda não gravada nesta semana";
+      saveHint.classList.remove("ready");
     } else {
-      var missing = total - done;
-      exportHint.textContent = total === 0 ? "" : ("Faltam "+missing+" PDV"+(missing===1?"":"s")+" para liberar a exportação");
-      exportHint.classList.remove("ready");
+      saveHint.textContent = "Gravada em " + formatSavedAt(saved.savedAt);
+      saveHint.classList.add("ready");
     }
 
     var counts = {};
     DAYS.forEach(function(d){ counts[d.code] = 0; });
-    stores.forEach(function(s){ var d = getDay(currentSup, s.chave); if (d) counts[d]++; });
+    stores.forEach(function(s){ getDays(currentSup, s.chave).forEach(function(d){ counts[d]++; }); });
     document.getElementById("dayMini").innerHTML = DAYS.map(function(d){
       return '<div class="d">'+d.label+'<b>'+counts[d.code]+'</b></div>';
     }).join("");
@@ -492,8 +674,23 @@
       }).join("");
 
     Array.prototype.forEach.call(document.querySelectorAll(".chip-filter"), function(el){
-      el.addEventListener("click", function(){ cddFilter = el.getAttribute("data-cdd"); renderAll(); });
+      el.addEventListener("click", function(){
+        cddFilter = el.getAttribute("data-cdd");
+        cidadeFilter = "TODAS";
+        promotorFilter = "TODOS";
+        renderAll();
+      });
     });
+
+    cidadeSel.onchange = function(){
+      cidadeFilter = cidadeSel.value;
+      promotorFilter = "TODOS";
+      renderAll();
+    };
+    promotorSel.onchange = function(){
+      promotorFilter = promotorSel.value;
+      renderAll();
+    };
   }
 
   function renderTopbar(){
@@ -503,21 +700,73 @@
   }
 
   function dayButtonsHtml(chave){
+    var active = getDays(currentSup, chave);
+    var locked = isLocked(currentSup);
     return '<div class="days">' + DAYS.map(function(d){
-      var on = getDay(currentSup, chave) === d.code;
-      return '<button class="day-btn'+(on?" on":"")+'" data-chave="'+escapeAttr(chave)+'" data-day="'+d.code+'" title="'+d.label+'">'+d.label.slice(0,3)+'</button>';
+      var on = active.indexOf(d.code) > -1;
+      return '<button class="day-btn'+(on?" on":"")+'"'+(locked?" disabled":"")+' data-chave="'+escapeAttr(chave)+'" data-day="'+d.code+'" title="'+d.label+'">'+d.label.slice(0,3)+'</button>';
     }).join("") + '</div>';
   }
 
-  function renderListView(){
-    if (!currentSup){ document.getElementById("listView").innerHTML = '<div class="empty-state">Nenhum supervisor na base.</div>'; return; }
-    var stores = storesForSupervisor(currentSup);
-    if (cddFilter !== "TODOS") stores = stores.filter(function(s){ return s.cdd === cddFilter; });
-    if (searchTerm){
-      var t = searchTerm.toLowerCase();
-      stores = stores.filter(function(s){ return s.loja.toLowerCase().indexOf(t)>-1 || s.cidade.toLowerCase().indexOf(t)>-1; });
-    }
-    if (!stores.length){ document.getElementById("listView").innerHTML = '<div class="empty-state">Nenhum PDV encontrado com esse filtro.</div>'; return; }
+  function retrySync(sup){
+    savedState[sup].syncStatus = "sending";
+    persistSavedState();
+    renderAll();
+    syncToSheet(sup).then(function(){
+      savedState[sup].syncStatus = "ok";
+      persistSavedState();
+      renderAll();
+    }).catch(function(){
+      savedState[sup].syncStatus = "error";
+      persistSavedState();
+      renderAll();
+    });
+  }
+
+  function renderLockBanner(){
+    var el = document.getElementById("lockBanner");
+    if (!currentSup || !isLocked(currentSup)){ el.innerHTML = ""; return; }
+    var saved = savedState[currentSup];
+    var statusText = "";
+    if (saved.syncStatus === "sending") statusText = " · enviando para o gestor…";
+    else if (saved.syncStatus === "ok") statusText = " · enviado ao gestor ✓";
+    else if (saved.syncStatus === "error") statusText = " · falha ao enviar ao gestor";
+    el.innerHTML = '<span>🔒 Agenda gravada em '+formatSavedAt(saved.savedAt)+' — travada para edição nesta semana.'+statusText+'</span>' +
+      '<div style="display:flex;gap:8px;">' +
+      (saved.syncStatus === "error" ? '<button class="btn small ghost" id="retrySyncBtn">Tentar enviar de novo</button>' : '') +
+      '<button class="btn small ghost" id="unlockBtn">Editar novamente</button>' +
+      '</div>';
+    document.getElementById("unlockBtn").addEventListener("click", function(){
+      savedState[currentSup].locked = false;
+      persistSavedState();
+      renderAll();
+    });
+    var retryBtn = document.getElementById("retrySyncBtn");
+    if (retryBtn) retryBtn.addEventListener("click", function(){ retrySync(currentSup); });
+  }
+
+  function renderWeekSummary(){
+    if (!currentSup){ document.getElementById("weekSummary").innerHTML = ""; return; }
+    var stores = applyFilters(storesForSupervisor(currentSup));
+    var byDay = {};
+    DAYS.forEach(function(d){ byDay[d.code] = []; });
+    stores.forEach(function(s){
+      getDays(currentSup, s.chave).forEach(function(d){ byDay[d].push(s); });
+    });
+    document.getElementById("weekSummary").innerHTML = '<div class="board">' + DAYS.map(function(d){
+      var list = byDay[d.code];
+      return '<div class="board-col"><h4>'+d.label+'<span class="n">'+list.length+'</span></h4>' +
+        (list.length ? list.map(function(s){
+          return '<div class="board-card"><div class="l">'+escapeHtml(s.loja)+'</div><div class="c">'+escapeHtml(s.cidade)+' · '+escapeHtml(s.promotores.join(" | "))+'</div></div>';
+        }).join("") : '<div class="board-empty">Sem visitas</div>') +
+      '</div>';
+    }).join("") + '</div>';
+  }
+
+  function renderPdvList(){
+    if (!currentSup){ document.getElementById("pdvList").innerHTML = ""; return; }
+    var stores = applyFilters(storesForSupervisor(currentSup));
+    if (!stores.length){ document.getElementById("pdvList").innerHTML = '<div class="empty-state">Nenhum PDV encontrado com esse filtro.</div>'; return; }
 
     var groups = {};
     var order = [];
@@ -528,61 +777,23 @@
 
     var html = order.map(function(cdd){
       var list = groups[cdd];
-      return '<div class="cdd-group">' +
-        '<div class="cdd-head"><h3>'+escapeHtml(cdd)+'</h3><span class="count">'+list.length+' PDV'+(list.length===1?"":"s")+'</span></div>' +
+      return '<div class="group-head">'+escapeHtml(cdd)+'<span class="count">'+list.length+' PDV'+(list.length===1?"":"s")+'</span></div>' +
         list.map(function(s){
           return '<div class="store-row">' +
             '<div class="info">' +
               '<div class="loja">'+escapeHtml(s.loja)+'</div>' +
-              '<div class="meta">'+escapeHtml(s.cidade)+'<span class="sep">·</span>'+escapeHtml(s.promotores.join(", "))+'</div>' +
+              '<div class="meta">'+escapeHtml(s.cidade)+'<span class="sep">·</span>'+escapeHtml(s.promotores.join(" | "))+'</div>' +
             '</div>' +
             dayButtonsHtml(s.chave) +
           '</div>';
-        }).join("") +
-      '</div>';
+        }).join("");
     }).join("");
 
-    document.getElementById("listView").innerHTML = html;
+    document.getElementById("pdvList").innerHTML = html;
 
-    Array.prototype.forEach.call(document.querySelectorAll(".day-btn"), function(btn){
+    Array.prototype.forEach.call(document.querySelectorAll("#pdvList .day-btn"), function(btn){
       btn.addEventListener("click", function(){
-        setDay(currentSup, btn.getAttribute("data-chave"), btn.getAttribute("data-day"));
-      });
-    });
-  }
-
-  function renderBoardView(){
-    if (!currentSup){ document.getElementById("boardView").innerHTML = ""; return; }
-    var stores = storesForSupervisor(currentSup);
-    if (cddFilter !== "TODOS") stores = stores.filter(function(s){ return s.cdd === cddFilter; });
-
-    var byDay = {};
-    DAYS.forEach(function(d){ byDay[d.code] = []; });
-    var pending = [];
-    stores.forEach(function(s){
-      var d = getDay(currentSup, s.chave);
-      if (d) byDay[d].push(s); else pending.push(s);
-    });
-
-    var board = '<div class="board">' + DAYS.map(function(d){
-      var list = byDay[d.code];
-      return '<div class="board-col"><h4>'+d.label+'<span class="n">'+list.length+'</span></h4>' +
-        (list.length ? list.map(function(s){
-          return '<div class="board-card"><div class="l">'+escapeHtml(s.loja)+'</div><div class="c">'+escapeHtml(s.cidade)+' · '+escapeHtml(s.cdd)+'</div></div>';
-        }).join("") : '<div class="board-empty">Sem visitas</div>') +
-      '</div>';
-    }).join("") + '</div>';
-
-    var pendingHtml = '<details class="pending-strip" '+(pending.length?"open":"")+'><summary>Ainda não agendados ('+pending.length+')</summary>' +
-      '<div style="margin-top:8px;">' + (pending.length ? pending.map(function(s){
-        return '<div class="store-row"><div class="info"><div class="loja">'+escapeHtml(s.loja)+'</div><div class="meta">'+escapeHtml(s.cidade)+'<span class="sep">·</span>'+escapeHtml(s.cdd)+'</div></div>' + dayButtonsHtml(s.chave) + '</div>';
-      }).join("") : '<div class="empty-state">Tudo agendado 🎉</div>') + '</div></details>';
-
-    document.getElementById("boardView").innerHTML = board + pendingHtml;
-
-    Array.prototype.forEach.call(document.querySelectorAll("#boardView .day-btn"), function(btn){
-      btn.addEventListener("click", function(){
-        setDay(currentSup, btn.getAttribute("data-chave"), btn.getAttribute("data-day"));
+        toggleDay(currentSup, btn.getAttribute("data-chave"), btn.getAttribute("data-day"));
       });
     });
   }
@@ -590,48 +801,34 @@
   function renderAll(){
     renderSidebar();
     renderTopbar();
-    if (view === "lista") renderListView(); else renderBoardView();
+    renderLockBanner();
+    renderWeekSummary();
+    renderPdvList();
   }
 
   /* ---------------- export ---------------- */
-  function buildAgendaText(){
-    var stores = storesForSupervisor(currentSup);
-    var byDay = {}; DAYS.forEach(function(d){ byDay[d.code]=[]; });
-    var pending = [];
-    stores.forEach(function(s){ var d=getDay(currentSup,s.chave); if(d) byDay[d].push(s); else pending.push(s); });
-    var lines = ["Agenda de visitas — "+currentSup, ""];
-    DAYS.forEach(function(d){
-      lines.push(d.label.toUpperCase()+" ("+byDay[d.code].length+")");
-      if (!byDay[d.code].length) lines.push("  —");
-      byDay[d.code].forEach(function(s){ lines.push("  • "+s.loja+" — "+s.cidade+" ("+s.cdd+")"); });
-      lines.push("");
-    });
-    if (pending.length){
-      lines.push("NÃO AGENDADOS ("+pending.length+")");
-      pending.forEach(function(s){ lines.push("  • "+s.loja+" — "+s.cidade+" ("+s.cdd+")"); });
-    }
-    return lines.join("\n");
-  }
-
   function xmlEscape(s){ return (s||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
   function buildAgendaXLS(){
     var stores = storesForSupervisor(currentSup);
     var dayOrder = {}; DAYS.forEach(function(d,i){ dayOrder[d.code] = i; });
-    var sorted = stores.slice().sort(function(a,b){
-      var da = getDay(currentSup, a.chave), db = getDay(currentSup, b.chave);
-      var ia = da!==null ? dayOrder[da] : 99, ib = db!==null ? dayOrder[db] : 99;
-      if (ia !== ib) return ia - ib;
-      return a.loja.localeCompare(b.loja);
+    var entries = [];
+    stores.forEach(function(s){
+      var days = getDays(currentSup, s.chave);
+      if (!days.length){ entries.push({s:s, dayIdx:99, dayLabel:"Não agendado"}); }
+      else { days.forEach(function(d){ entries.push({s:s, dayIdx:dayOrder[d], dayLabel: DAYS.filter(function(x){return x.code===d;})[0].label}); }); }
+    });
+    entries.sort(function(a,b){
+      if (a.dayIdx !== b.dayIdx) return a.dayIdx - b.dayIdx;
+      return a.s.loja.localeCompare(b.s.loja);
     });
     var header = ["SUPERVISOR","DIA","CDD","LOJA","CIDADE","ENDEREÇO","PROMOTORES"];
     var headerRow = "<Row>" + header.map(function(h){
       return '<Cell ss:StyleID="Header"><Data ss:Type="String">'+xmlEscape(h)+'</Data></Cell>';
     }).join("") + "</Row>";
-    var bodyRows = sorted.map(function(s){
-      var d = getDay(currentSup, s.chave);
-      var dayLabel = d ? DAYS.filter(function(x){ return x.code===d; })[0].label : "Não agendado";
-      var cells = [currentSup, dayLabel, s.cdd, s.loja, s.cidade, s.endereco, s.promotores.join(" / ")];
+    var bodyRows = entries.map(function(e){
+      var s = e.s;
+      var cells = [currentSup, e.dayLabel, s.cdd, s.loja, s.cidade, s.endereco, s.promotores.join(" | ")];
       return "<Row>" + cells.map(function(v){
         return '<Cell><Data ss:Type="String">'+xmlEscape(v)+'</Data></Cell>';
       }).join("") + "</Row>";
@@ -712,6 +909,7 @@
 
   function launchApp(){
     assignments = loadAssignments();
+    savedState = loadSavedState();
     currentSup = null;
     document.getElementById("bootScreen").style.display = "none";
     document.getElementById("intake").style.display = "none";
@@ -740,49 +938,10 @@
 
   function initApp(){
     document.getElementById("supSelect").addEventListener("change", function(e){
-      currentSup = e.target.value; cddFilter = "TODOS"; searchTerm = ""; document.getElementById("search").value="";
+      currentSup = e.target.value;
+      cddFilter = "TODOS"; cidadeFilter = "TODAS"; promotorFilter = "TODOS";
       renderAll();
     });
-    document.getElementById("search").addEventListener("input", function(e){ searchTerm = e.target.value; renderListView(); });
-
-    document.getElementById("viewListBtn").addEventListener("click", function(){
-      view = "lista";
-      document.getElementById("viewListBtn").classList.add("active");
-      document.getElementById("viewBoardBtn").classList.remove("active");
-      document.getElementById("listView").style.display = "";
-      document.getElementById("listToolbar").style.display = "";
-      document.getElementById("boardView").style.display = "none";
-      renderListView();
-    });
-    document.getElementById("viewBoardBtn").addEventListener("click", function(){
-      view = "semana";
-      document.getElementById("viewBoardBtn").classList.add("active");
-      document.getElementById("viewListBtn").classList.remove("active");
-      document.getElementById("boardView").style.display = "";
-      document.getElementById("listView").style.display = "none";
-      document.getElementById("listToolbar").style.display = "none";
-      renderBoardView();
-    });
-
-    document.getElementById("copyBtn").addEventListener("click", function(){
-      var text = buildAgendaText();
-      var done = function(){
-        var btn = document.getElementById("copyBtn");
-        var old = btn.textContent; btn.textContent = "Copiado ✓";
-        setTimeout(function(){ btn.textContent = old; }, 1600);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text, done); });
-      } else { fallbackCopy(text, done); }
-    });
-
-    function fallbackCopy(text, done){
-      var ta = document.createElement("textarea");
-      ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); done(); } catch(e){}
-      document.body.removeChild(ta);
-    }
 
     document.getElementById("downloadBtn").addEventListener("click", function(e){
       if (e.currentTarget.disabled) return;
@@ -795,21 +954,31 @@
       URL.revokeObjectURL(url);
     });
 
-    document.getElementById("resetBtn").addEventListener("click", function(){
-      var btn = this;
-      var old = btn.textContent;
-      btn.textContent = "Atualizando…"; btn.disabled = true;
-      fetchLatestData().then(function(){
-        renderSupSelect();
+    document.getElementById("clearBtn").addEventListener("click", function(){
+      if (!currentSup || isLocked(currentSup)) return;
+      var stores = storesForSupervisor(currentSup);
+      var doneCount = stores.filter(function(s){ return getDays(currentSup, s.chave).length > 0; }).length;
+      if (doneCount === 0) return;
+      showConfirm("Isso apaga "+doneCount+" loja"+(doneCount===1?"":"s")+" marcada"+(doneCount===1?"":"s")+" para "+currentSup+" nesta semana. Não dá pra desfazer.", function(){
+        assignments[currentSup] = {};
+        saveAssignments();
         renderAll();
-        btn.textContent = "Atualizado ✓";
-        setTimeout(function(){ btn.textContent = old; btn.disabled = false; }, 1600);
+      });
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", function(){
+      if (!currentSup || this.disabled) return;
+      savedState[currentSup] = { savedAt: Date.now(), snapshot: currentSnapshot(currentSup), locked: true, syncStatus: "sending" };
+      persistSavedState();
+      renderAll();
+      syncToSheet(currentSup).then(function(){
+        savedState[currentSup].syncStatus = "ok";
+        persistSavedState();
+        renderAll();
       }).catch(function(){
-        btn.textContent = old; btn.disabled = false;
-        if (confirm("Não consegui buscar dados novos no servidor. Quer carregar um CSV manualmente?")){
-          document.getElementById("app").classList.remove("show");
-          document.getElementById("intake").style.display = "flex";
-        }
+        savedState[currentSup].syncStatus = "error";
+        persistSavedState();
+        renderAll();
       });
     });
   }
