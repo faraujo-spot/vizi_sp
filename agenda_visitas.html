@@ -1,0 +1,839 @@
+<title>Roteiro do Supervisor — Agenda de Visitas</title>
+<style>
+  :root{
+    --bg:#f5f3ee;
+    --surface:#ffffff;
+    --surface-2:#faf9f5;
+    --ink:#23241f;
+    --muted:#726d5c;
+    --line:#ddd7c4;
+    --line-soft:#e9e4d5;
+    --accent:#bd511e;
+    --accent-ink:#fff8f1;
+    --accent-soft:rgba(189,81,30,0.10);
+    --success:#3c7156;
+    --success-soft:rgba(60,113,86,0.13);
+    --danger:#a1332a;
+    --shadow:0 1px 2px rgba(35,32,25,0.06), 0 8px 24px -12px rgba(35,32,25,0.18);
+    --radius:10px;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "IBM Plex Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1b1a16;
+      --surface:#242219;
+      --surface-2:#2b2920;
+      --ink:#efeade;
+      --muted:#a49c85;
+      --line:#3c3828;
+      --line-soft:#332f22;
+      --accent:#e0824f;
+      --accent-ink:#231a12;
+      --accent-soft:rgba(224,130,79,0.14);
+      --success:#73b291;
+      --success-soft:rgba(115,178,145,0.16);
+      --danger:#e0776b;
+      --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1b1a16;
+    --surface:#242219;
+    --surface-2:#2b2920;
+    --ink:#efeade;
+    --muted:#a49c85;
+    --line:#3c3828;
+    --line-soft:#332f22;
+    --accent:#e0824f;
+    --accent-ink:#231a12;
+    --accent-soft:rgba(224,130,79,0.14);
+    --success:#73b291;
+    --success-soft:rgba(115,178,145,0.16);
+    --danger:#e0776b;
+    --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f3ee;
+    --surface:#ffffff;
+    --surface-2:#faf9f5;
+    --ink:#23241f;
+    --muted:#726d5c;
+    --line:#ddd7c4;
+    --line-soft:#e9e4d5;
+    --accent:#bd511e;
+    --accent-ink:#fff8f1;
+    --accent-soft:rgba(189,81,30,0.10);
+    --success:#3c7156;
+    --success-soft:rgba(60,113,86,0.13);
+    --danger:#a1332a;
+    --shadow:0 1px 2px rgba(35,32,25,0.06), 0 8px 24px -12px rgba(35,32,25,0.18);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent-soft); }
+  button{ font-family:inherit; }
+  a{ color:inherit; }
+
+  .eyebrow{
+    text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:700;
+    color:var(--muted);
+  }
+
+  /* ---------- Intake screen ---------- */
+  #intake{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .intake-card{
+    width:100%; max-width:560px; background:var(--surface); border:1px solid var(--line);
+    border-radius:16px; box-shadow:var(--shadow); padding:32px 32px 28px;
+  }
+  .intake-card h1{
+    font-size:22px; margin:10px 0 4px; text-wrap:balance; letter-spacing:-.01em;
+  }
+  .intake-card p.lede{ color:var(--muted); margin:0 0 24px; max-width:46ch; }
+  .drop{
+    border:1.5px dashed var(--line); border-radius:var(--radius); padding:28px 20px;
+    text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+    background:var(--surface-2);
+  }
+  .drop.drag{ border-color:var(--accent); background:var(--accent-soft); }
+  .drop svg{ opacity:.55; margin-bottom:8px; }
+  .drop .hint{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+  .drop input[type="file"]{ display:none; }
+  .or-row{ display:flex; align-items:center; gap:10px; margin:18px 0 12px; color:var(--muted); font-size:12px; }
+  .or-row::before, .or-row::after{ content:""; flex:1; height:1px; background:var(--line); }
+  textarea#pasteArea{
+    width:100%; min-height:90px; resize:vertical; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); padding:10px 12px; font:12px var(--mono);
+  }
+  textarea#pasteArea:focus, .drop:focus-visible, button:focus-visible, input:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  .btn{
+    appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    border-radius:8px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px; transition:border-color .15s, background .15s, transform .05s;
+  }
+  .btn:hover{ border-color:var(--accent); }
+  .btn:active{ transform:translateY(1px); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .btn.primary:hover{ filter:brightness(1.05); }
+  .btn.ghost{ background:transparent; border-color:transparent; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); border-color:var(--line); }
+  .btn.small{ padding:6px 10px; font-size:12px; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  #intakeActions{ display:flex; justify-content:flex-end; margin-top:14px; }
+  #intakeError{ color:var(--danger); font-size:12.5px; margin-top:10px; min-height:1em; }
+  .fileMeta{ font-size:12.5px; color:var(--success); margin-top:10px; display:none; align-items:center; gap:6px; }
+
+  /* ---------- App shell ---------- */
+  #app{ display:none; min-height:100vh; }
+  #app.show{ display:flex; }
+  #sidebar{
+    width:300px; flex:0 0 auto; border-right:1px solid var(--line); background:var(--surface);
+    display:flex; flex-direction:column; padding:20px 18px; gap:16px; height:100vh; position:sticky; top:0;
+    overflow-y:auto;
+  }
+  .brand{ display:flex; align-items:baseline; gap:8px; }
+  .brand .mark{ font-size:18px; }
+  .brand h2{ font-size:15px; margin:0; letter-spacing:-.01em; }
+  select#supSelect{
+    width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-size:13.5px; font-weight:600;
+  }
+  .stat-block{ display:flex; flex-direction:column; gap:8px; }
+  .stat-row{ display:flex; align-items:center; justify-content:space-between; font-size:13px; }
+  .stat-row .n{ font-variant-numeric:tabular-nums; font-weight:700; }
+  .bar{ height:6px; border-radius:4px; background:var(--line-soft); overflow:hidden; }
+  .bar > i{ display:block; height:100%; background:var(--success); border-radius:4px 0 0 4px; transition:width .2s; }
+  .day-mini{ display:flex; gap:5px; }
+  .day-mini .d{
+    flex:1; text-align:center; font:11px var(--mono); padding:5px 0; border-radius:5px;
+    background:var(--surface-2); color:var(--muted); border:1px solid var(--line-soft);
+  }
+  .day-mini .d b{ display:block; font-size:12px; color:var(--ink); font-weight:700; }
+  .cdd-filters{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip-filter{
+    font-size:11.5px; padding:4px 9px; border-radius:99px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--muted); cursor:pointer; user-select:none;
+  }
+  .chip-filter.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700; }
+  .side-actions{ margin-top:auto; display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid var(--line-soft); }
+  .export-hint{ font-size:11px; color:var(--muted); margin:-2px 0 2px; line-height:1.35; }
+  .export-hint.ready{ color:var(--success); font-weight:700; }
+
+  #main{ flex:1; min-width:0; padding:22px 28px 60px; }
+  .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+  .topbar h1{ font-size:19px; margin:2px 0 2px; letter-spacing:-.01em; }
+  .topbar .sub{ color:var(--muted); font-size:13px; }
+  .view-toggle{ display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .view-toggle button{
+    appearance:none; border:none; background:var(--surface); color:var(--muted); padding:8px 14px;
+    font-size:12.5px; font-weight:700; cursor:pointer; border-right:1px solid var(--line);
+  }
+  .view-toggle button:last-child{ border-right:none; }
+  .view-toggle button.active{ background:var(--accent-soft); color:var(--accent); }
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  input#search{
+    flex:1; min-width:180px; padding:8px 12px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font-size:13px;
+  }
+
+  .cdd-group{ margin-bottom:22px; }
+  .cdd-head{
+    display:flex; align-items:baseline; gap:8px; margin-bottom:8px; padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .cdd-head h3{ font-size:13px; margin:0; letter-spacing:.02em; }
+  .cdd-head .count{ font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  .store-row{
+    display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+    padding:10px 12px; border:1px solid var(--line-soft); border-radius:9px; background:var(--surface);
+    margin-bottom:6px;
+  }
+  .store-row .info{ min-width:0; }
+  .store-row .loja{ font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .store-row .meta{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .store-row .meta .sep{ margin:0 5px; opacity:.5; }
+  .days{ display:flex; gap:4px; flex:0 0 auto; }
+  .day-btn{
+    width:34px; height:30px; border-radius:6px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--muted); font:11px var(--mono); font-weight:700;
+    cursor:pointer; transition:all .12s;
+  }
+  .day-btn:hover{ border-color:var(--accent); color:var(--ink); }
+  .day-btn.on{ background:var(--success); border-color:var(--success); color:#fff; }
+
+  .empty-state{ color:var(--muted); font-size:13px; padding:30px 0; text-align:center; }
+
+  /* Week board view */
+  .board{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:12px; align-items:start; }
+  .board-col{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px; min-height:120px; }
+  .board-col h4{
+    margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .board-col h4 .n{ background:var(--surface-2); border-radius:99px; padding:1px 7px; font:11px var(--mono); color:var(--ink); }
+  .board-card{
+    background:var(--surface-2); border:1px solid var(--line-soft); border-radius:7px; padding:7px 9px; margin-bottom:6px;
+    font-size:12px;
+  }
+  .board-card .l{ font-weight:700; }
+  .board-card .c{ color:var(--muted); font-size:11px; }
+  .board-empty{ color:var(--muted); font-size:11.5px; text-align:center; padding:14px 0; }
+
+  .pending-strip{ margin-top:8px; }
+  .pending-strip summary{ cursor:pointer; font-size:12.5px; color:var(--muted); font-weight:700; }
+
+  @media (max-width: 860px){
+    #app.show{ flex-direction:column; }
+    #sidebar{ width:auto; height:auto; position:static; border-right:none; border-bottom:1px solid var(--line); }
+    .board{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  }
+</style>
+
+<div id="bootScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;">Carregando base de rotas…</div>
+
+<div id="intake" style="display:none;">
+  <div class="intake-card">
+    <div class="eyebrow">Roteiro do supervisor</div>
+    <h1>Não consegui carregar a base automaticamente</h1>
+    <p class="lede">Normalmente os dados vêm prontos junto com a página. Como fallback, envie o CSV de rotas (separado por ponto e vírgula) manualmente abaixo.</p>
+
+    <label class="drop" id="dropZone" tabindex="0">
+      <input type="file" id="fileInput" accept=".csv,text/csv" />
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      <div><strong>Arraste o arquivo aqui</strong> ou clique para escolher</div>
+      <div class="hint">.csv — colunas PROMOTOR, SUPERVISOR, CDD, LOJA, CIDADE…</div>
+    </label>
+    <div class="fileMeta" id="fileMeta">✓ <span></span></div>
+
+    <div class="or-row">ou cole o conteúdo</div>
+    <textarea id="pasteArea" placeholder="PROMOTOR;SUPERVISOR;UNB;COD PDV;CHAVE;CDD;LOJA;ENDEREÇO;CIDADE;ROTA;SEG;TER;QUA;QUI;SEX;SÁB..."></textarea>
+
+    <div id="intakeError"></div>
+    <div id="intakeActions">
+      <button class="btn primary" id="loadBtn" disabled>Montar agenda →</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand"><span class="mark">📍</span><h2>Roteiro do Supervisor</h2></div>
+
+    <div>
+      <label for="supSelect" class="eyebrow">Supervisor</label><br/>
+      <select id="supSelect"></select>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-row"><span>PDVs na carteira</span><span class="n" id="statTotal">0</span></div>
+      <div class="stat-row"><span>Agendados</span><span class="n" id="statDone">0</span></div>
+      <div class="bar"><i id="statBar" style="width:0%"></i></div>
+    </div>
+
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px;">Por dia</div>
+      <div class="day-mini" id="dayMini"></div>
+    </div>
+
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px;">CDD</div>
+      <div class="cdd-filters" id="cddFilters"></div>
+    </div>
+
+    <div class="side-actions">
+      <button class="btn small" id="copyBtn">Copiar agenda</button>
+      <button class="btn small primary" id="downloadBtn" disabled>Exportar Excel</button>
+      <div class="export-hint" id="exportHint">Agende todos os PDVs para liberar a exportação</div>
+      <button class="btn small ghost" id="resetBtn">Atualizar dados</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow" id="supEyebrow">Supervisor</div>
+        <h1 id="supName">—</h1>
+        <div class="sub">Toque no dia da semana em cada PDV para marcar a visita recorrente.</div>
+      </div>
+      <div class="view-toggle">
+        <button id="viewListBtn" class="active">Lista</button>
+        <button id="viewBoardBtn">Semana</button>
+      </div>
+    </div>
+
+    <div class="toolbar" id="listToolbar">
+      <input id="search" type="text" placeholder="Buscar por loja ou cidade…" />
+    </div>
+
+    <div id="listView"></div>
+    <div id="boardView" style="display:none;"></div>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var DAYS = [
+    {code:"SEG", label:"Seg", idx:0},
+    {code:"TER", label:"Ter", idx:1},
+    {code:"QUA", label:"Qua", idx:2},
+    {code:"QUI", label:"Qui", idx:3},
+    {code:"SEX", label:"Sex", idx:4},
+    {code:"SAB", label:"Sáb", idx:5}
+  ];
+  var STORE_KEY = "spot_agenda_visitas_v1";
+  var DATA_KEY = "spot_agenda_dados_v1";
+  var DATA_URL = "agenda_dados.csv";
+
+  var rows = [];
+  var assignments = {}; // { [supervisor]: { [chave]: dayCode } }
+  var currentSup = null;
+  var cddFilter = "TODOS";
+  var searchTerm = "";
+  var view = "lista";
+
+  function norm(s){ return (s||"").toString().trim(); }
+
+  function findCol(header, names){
+    for (var i=0;i<header.length;i++){
+      var h = header[i].toUpperCase().replace(/﻿/g,"").trim();
+      for (var j=0;j<names.length;j++){ if (h === names[j]) return i; }
+    }
+    return -1;
+  }
+
+  function parseCSV(text){
+    var lines = text.replace(/﻿/g,"").split(/\r?\n/).filter(function(l){ return l.trim().length; });
+    if (!lines.length) return [];
+    var header = lines[0].split(";");
+    var iPromotor = findCol(header, ["PROMOTOR"]);
+    var iSupervisor = findCol(header, ["SUPERVISOR"]);
+    var iCDD = findCol(header, ["CDD"]);
+    var iCodPdv = findCol(header, ["COD PDV","CODPDV"]);
+    var iChave = findCol(header, ["CHAVE"]);
+    var iLoja = findCol(header, ["LOJA"]);
+    var iEndereco = findCol(header, ["ENDEREÇO","ENDERECO"]);
+    var iCidade = findCol(header, ["CIDADE"]);
+    var iRota = findCol(header, ["ROTA"]);
+
+    if (iSupervisor === -1 || iLoja === -1){ return null; }
+
+    var out = [];
+    for (var l=1; l<lines.length; l++){
+      var cols = lines[l].split(";");
+      var chave = iChave>-1 ? norm(cols[iChave]) : (norm(cols[iCodPdv])+"_"+l);
+      var sup = norm(cols[iSupervisor]);
+      var loja = norm(cols[iLoja]);
+      if (!sup || !loja) continue;
+      out.push({
+        promotor: iPromotor>-1 ? norm(cols[iPromotor]) : "",
+        supervisor: sup,
+        cdd: iCDD>-1 ? norm(cols[iCDD]) : "SEM CDD",
+        codPdv: iCodPdv>-1 ? norm(cols[iCodPdv]) : "",
+        chave: chave || (loja+"_"+l),
+        loja: loja,
+        endereco: iEndereco>-1 ? norm(cols[iEndereco]) : "",
+        cidade: iCidade>-1 ? norm(cols[iCidade]) : "",
+        rota: iRota>-1 ? norm(cols[iRota]) : ""
+      });
+    }
+    return out;
+  }
+
+  function loadAssignments(){
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch(e){ return {}; }
+  }
+  function saveAssignments(){
+    localStorage.setItem(STORE_KEY, JSON.stringify(assignments));
+  }
+
+  function storesForSupervisor(sup){
+    var map = new Map();
+    for (var i=0;i<rows.length;i++){
+      var r = rows[i];
+      if (r.supervisor !== sup) continue;
+      if (!map.has(r.chave)){
+        map.set(r.chave, {chave:r.chave, cdd:r.cdd, codPdv:r.codPdv, loja:r.loja, endereco:r.endereco, cidade:r.cidade, rota:r.rota, promotores:[r.promotor]});
+      } else if (r.promotor && map.get(r.chave).promotores.indexOf(r.promotor) === -1){
+        map.get(r.chave).promotores.push(r.promotor);
+      }
+    }
+    return Array.from(map.values()).sort(function(a,b){
+      if (a.cdd !== b.cdd) return a.cdd.localeCompare(b.cdd);
+      if (a.cidade !== b.cidade) return a.cidade.localeCompare(b.cidade);
+      return a.loja.localeCompare(b.loja);
+    });
+  }
+
+  function uniqueSupervisors(){
+    var s = new Set();
+    rows.forEach(function(r){ s.add(r.supervisor); });
+    return Array.from(s).sort();
+  }
+
+  function cddsForSupervisor(sup){
+    var s = new Set();
+    rows.forEach(function(r){ if (r.supervisor === sup) s.add(r.cdd); });
+    return Array.from(s).sort();
+  }
+
+  function getDay(sup, chave){
+    return (assignments[sup] && assignments[sup][chave]) || null;
+  }
+  function setDay(sup, chave, code){
+    if (!assignments[sup]) assignments[sup] = {};
+    if (assignments[sup][chave] === code){ delete assignments[sup][chave]; }
+    else { assignments[sup][chave] = code; }
+    saveAssignments();
+    renderAll();
+  }
+
+  /* ---------------- rendering ---------------- */
+  function renderSupSelect(){
+    var sel = document.getElementById("supSelect");
+    var sups = uniqueSupervisors();
+    sel.innerHTML = sups.map(function(s){ return '<option value="'+escapeAttr(s)+'">'+escapeHtml(s)+'</option>'; }).join("");
+    if (!currentSup || sups.indexOf(currentSup) === -1) currentSup = sups[0] || null;
+    sel.value = currentSup || "";
+  }
+
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  function renderSidebar(){
+    if (!currentSup) return;
+    var stores = storesForSupervisor(currentSup);
+    var filtered = cddFilter === "TODOS" ? stores : stores.filter(function(s){ return s.cdd === cddFilter; });
+    var total = stores.length;
+    var done = stores.filter(function(s){ return !!getDay(currentSup, s.chave); }).length;
+
+    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statDone").textContent = done;
+    document.getElementById("statBar").style.width = (total ? Math.round(done/total*100) : 0) + "%";
+
+    var exportBtn = document.getElementById("downloadBtn");
+    var exportHint = document.getElementById("exportHint");
+    var ready = total > 0 && done === total;
+    exportBtn.disabled = !ready;
+    if (ready){
+      exportHint.textContent = "Agenda completa — pronta para exportar";
+      exportHint.classList.add("ready");
+    } else {
+      var missing = total - done;
+      exportHint.textContent = total === 0 ? "" : ("Faltam "+missing+" PDV"+(missing===1?"":"s")+" para liberar a exportação");
+      exportHint.classList.remove("ready");
+    }
+
+    var counts = {};
+    DAYS.forEach(function(d){ counts[d.code] = 0; });
+    stores.forEach(function(s){ var d = getDay(currentSup, s.chave); if (d) counts[d]++; });
+    document.getElementById("dayMini").innerHTML = DAYS.map(function(d){
+      return '<div class="d">'+d.label+'<b>'+counts[d.code]+'</b></div>';
+    }).join("");
+
+    var cdds = cddsForSupervisor(currentSup);
+    document.getElementById("cddFilters").innerHTML =
+      '<span class="chip-filter'+(cddFilter==="TODOS"?" active":"")+'" data-cdd="TODOS">Todos ('+total+')</span>' +
+      cdds.map(function(c){
+        var n = stores.filter(function(s){ return s.cdd===c; }).length;
+        return '<span class="chip-filter'+(cddFilter===c?" active":"")+'" data-cdd="'+escapeAttr(c)+'">'+escapeHtml(c)+' ('+n+')</span>';
+      }).join("");
+
+    Array.prototype.forEach.call(document.querySelectorAll(".chip-filter"), function(el){
+      el.addEventListener("click", function(){ cddFilter = el.getAttribute("data-cdd"); renderAll(); });
+    });
+  }
+
+  function renderTopbar(){
+    document.getElementById("supName").textContent = currentSup || "—";
+    var stores = currentSup ? storesForSupervisor(currentSup) : [];
+    document.getElementById("supEyebrow").textContent = stores.length + " PDV" + (stores.length===1?"":"s") + " na carteira";
+  }
+
+  function dayButtonsHtml(chave){
+    return '<div class="days">' + DAYS.map(function(d){
+      var on = getDay(currentSup, chave) === d.code;
+      return '<button class="day-btn'+(on?" on":"")+'" data-chave="'+escapeAttr(chave)+'" data-day="'+d.code+'" title="'+d.label+'">'+d.label.slice(0,3)+'</button>';
+    }).join("") + '</div>';
+  }
+
+  function renderListView(){
+    if (!currentSup){ document.getElementById("listView").innerHTML = '<div class="empty-state">Nenhum supervisor na base.</div>'; return; }
+    var stores = storesForSupervisor(currentSup);
+    if (cddFilter !== "TODOS") stores = stores.filter(function(s){ return s.cdd === cddFilter; });
+    if (searchTerm){
+      var t = searchTerm.toLowerCase();
+      stores = stores.filter(function(s){ return s.loja.toLowerCase().indexOf(t)>-1 || s.cidade.toLowerCase().indexOf(t)>-1; });
+    }
+    if (!stores.length){ document.getElementById("listView").innerHTML = '<div class="empty-state">Nenhum PDV encontrado com esse filtro.</div>'; return; }
+
+    var groups = {};
+    var order = [];
+    stores.forEach(function(s){
+      if (!groups[s.cdd]){ groups[s.cdd] = []; order.push(s.cdd); }
+      groups[s.cdd].push(s);
+    });
+
+    var html = order.map(function(cdd){
+      var list = groups[cdd];
+      return '<div class="cdd-group">' +
+        '<div class="cdd-head"><h3>'+escapeHtml(cdd)+'</h3><span class="count">'+list.length+' PDV'+(list.length===1?"":"s")+'</span></div>' +
+        list.map(function(s){
+          return '<div class="store-row">' +
+            '<div class="info">' +
+              '<div class="loja">'+escapeHtml(s.loja)+'</div>' +
+              '<div class="meta">'+escapeHtml(s.cidade)+'<span class="sep">·</span>'+escapeHtml(s.promotores.join(", "))+'</div>' +
+            '</div>' +
+            dayButtonsHtml(s.chave) +
+          '</div>';
+        }).join("") +
+      '</div>';
+    }).join("");
+
+    document.getElementById("listView").innerHTML = html;
+
+    Array.prototype.forEach.call(document.querySelectorAll(".day-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        setDay(currentSup, btn.getAttribute("data-chave"), btn.getAttribute("data-day"));
+      });
+    });
+  }
+
+  function renderBoardView(){
+    if (!currentSup){ document.getElementById("boardView").innerHTML = ""; return; }
+    var stores = storesForSupervisor(currentSup);
+    if (cddFilter !== "TODOS") stores = stores.filter(function(s){ return s.cdd === cddFilter; });
+
+    var byDay = {};
+    DAYS.forEach(function(d){ byDay[d.code] = []; });
+    var pending = [];
+    stores.forEach(function(s){
+      var d = getDay(currentSup, s.chave);
+      if (d) byDay[d].push(s); else pending.push(s);
+    });
+
+    var board = '<div class="board">' + DAYS.map(function(d){
+      var list = byDay[d.code];
+      return '<div class="board-col"><h4>'+d.label+'<span class="n">'+list.length+'</span></h4>' +
+        (list.length ? list.map(function(s){
+          return '<div class="board-card"><div class="l">'+escapeHtml(s.loja)+'</div><div class="c">'+escapeHtml(s.cidade)+' · '+escapeHtml(s.cdd)+'</div></div>';
+        }).join("") : '<div class="board-empty">Sem visitas</div>') +
+      '</div>';
+    }).join("") + '</div>';
+
+    var pendingHtml = '<details class="pending-strip" '+(pending.length?"open":"")+'><summary>Ainda não agendados ('+pending.length+')</summary>' +
+      '<div style="margin-top:8px;">' + (pending.length ? pending.map(function(s){
+        return '<div class="store-row"><div class="info"><div class="loja">'+escapeHtml(s.loja)+'</div><div class="meta">'+escapeHtml(s.cidade)+'<span class="sep">·</span>'+escapeHtml(s.cdd)+'</div></div>' + dayButtonsHtml(s.chave) + '</div>';
+      }).join("") : '<div class="empty-state">Tudo agendado 🎉</div>') + '</div></details>';
+
+    document.getElementById("boardView").innerHTML = board + pendingHtml;
+
+    Array.prototype.forEach.call(document.querySelectorAll("#boardView .day-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        setDay(currentSup, btn.getAttribute("data-chave"), btn.getAttribute("data-day"));
+      });
+    });
+  }
+
+  function renderAll(){
+    renderSidebar();
+    renderTopbar();
+    if (view === "lista") renderListView(); else renderBoardView();
+  }
+
+  /* ---------------- export ---------------- */
+  function buildAgendaText(){
+    var stores = storesForSupervisor(currentSup);
+    var byDay = {}; DAYS.forEach(function(d){ byDay[d.code]=[]; });
+    var pending = [];
+    stores.forEach(function(s){ var d=getDay(currentSup,s.chave); if(d) byDay[d].push(s); else pending.push(s); });
+    var lines = ["Agenda de visitas — "+currentSup, ""];
+    DAYS.forEach(function(d){
+      lines.push(d.label.toUpperCase()+" ("+byDay[d.code].length+")");
+      if (!byDay[d.code].length) lines.push("  —");
+      byDay[d.code].forEach(function(s){ lines.push("  • "+s.loja+" — "+s.cidade+" ("+s.cdd+")"); });
+      lines.push("");
+    });
+    if (pending.length){
+      lines.push("NÃO AGENDADOS ("+pending.length+")");
+      pending.forEach(function(s){ lines.push("  • "+s.loja+" — "+s.cidade+" ("+s.cdd+")"); });
+    }
+    return lines.join("\n");
+  }
+
+  function xmlEscape(s){ return (s||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  function buildAgendaXLS(){
+    var stores = storesForSupervisor(currentSup);
+    var dayOrder = {}; DAYS.forEach(function(d,i){ dayOrder[d.code] = i; });
+    var sorted = stores.slice().sort(function(a,b){
+      var da = getDay(currentSup, a.chave), db = getDay(currentSup, b.chave);
+      var ia = da!==null ? dayOrder[da] : 99, ib = db!==null ? dayOrder[db] : 99;
+      if (ia !== ib) return ia - ib;
+      return a.loja.localeCompare(b.loja);
+    });
+    var header = ["SUPERVISOR","DIA","CDD","LOJA","CIDADE","ENDEREÇO","PROMOTORES"];
+    var headerRow = "<Row>" + header.map(function(h){
+      return '<Cell ss:StyleID="Header"><Data ss:Type="String">'+xmlEscape(h)+'</Data></Cell>';
+    }).join("") + "</Row>";
+    var bodyRows = sorted.map(function(s){
+      var d = getDay(currentSup, s.chave);
+      var dayLabel = d ? DAYS.filter(function(x){ return x.code===d; })[0].label : "Não agendado";
+      var cells = [currentSup, dayLabel, s.cdd, s.loja, s.cidade, s.endereco, s.promotores.join(" / ")];
+      return "<Row>" + cells.map(function(v){
+        return '<Cell><Data ss:Type="String">'+xmlEscape(v)+'</Data></Cell>';
+      }).join("") + "</Row>";
+    }).join("");
+
+    return '<?xml version="1.0"?>' +
+      '<?mso-application progid="Excel.Sheet"?>' +
+      '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ' +
+      'xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+      'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
+      'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
+      '<Styles><Style ss:ID="Header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#BD511E" ss:Pattern="Solid"/></Style></Styles>' +
+      '<Worksheet ss:Name="Agenda"><Table>' + headerRow + bodyRows + '</Table></Worksheet>' +
+      '</Workbook>';
+  }
+
+  /* ---------------- intake ---------------- */
+  var pendingText = null;
+
+  function tryEnableLoad(){
+    document.getElementById("loadBtn").disabled = !pendingText;
+  }
+
+  function handleFile(file){
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      pendingText = e.target.result;
+      var meta = document.getElementById("fileMeta");
+      meta.style.display = "flex";
+      meta.querySelector("span").textContent = file.name + " carregado";
+      document.getElementById("intakeError").textContent = "";
+      tryEnableLoad();
+    };
+    reader.onerror = function(){
+      document.getElementById("intakeError").textContent = "Não consegui ler esse arquivo. Tente colar o conteúdo abaixo.";
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function initIntake(){
+    var dz = document.getElementById("dropZone");
+    var fi = document.getElementById("fileInput");
+    var pa = document.getElementById("pasteArea");
+
+    dz.addEventListener("click", function(){ fi.click(); });
+    dz.addEventListener("keydown", function(e){ if (e.key==="Enter" || e.key===" "){ e.preventDefault(); fi.click(); } });
+    fi.addEventListener("change", function(){ handleFile(fi.files[0]); });
+
+    ["dragenter","dragover"].forEach(function(evt){
+      dz.addEventListener(evt, function(e){ e.preventDefault(); dz.classList.add("drag"); });
+    });
+    ["dragleave","drop"].forEach(function(evt){
+      dz.addEventListener(evt, function(e){ e.preventDefault(); dz.classList.remove("drag"); });
+    });
+    dz.addEventListener("drop", function(e){
+      var f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) handleFile(f);
+    });
+
+    pa.addEventListener("input", function(){
+      if (pa.value.trim().length > 20){ pendingText = pa.value; }
+      else if (!document.getElementById("fileMeta").style.display || document.getElementById("fileMeta").style.display==="none"){ pendingText = pa.value.trim() ? pa.value : null; }
+      tryEnableLoad();
+    });
+
+    document.getElementById("loadBtn").addEventListener("click", function(){
+      var parsed = parseCSV(pendingText || "");
+      if (!parsed || !parsed.length){
+        document.getElementById("intakeError").textContent = "Não encontrei as colunas SUPERVISOR e LOJA nesse arquivo. Confira se está separado por ponto e vírgula (;).";
+        return;
+      }
+      rows = parsed;
+      localStorage.setItem(DATA_KEY, pendingText);
+      launchApp();
+    });
+  }
+
+  function launchApp(){
+    assignments = loadAssignments();
+    currentSup = null;
+    document.getElementById("bootScreen").style.display = "none";
+    document.getElementById("intake").style.display = "none";
+    document.getElementById("app").classList.add("show");
+    renderSupSelect();
+    renderAll();
+  }
+
+  function showIntake(){
+    document.getElementById("bootScreen").style.display = "none";
+    document.getElementById("intake").style.display = "flex";
+  }
+
+  function fetchLatestData(){
+    return fetch(DATA_URL, {cache:"no-store"}).then(function(res){
+      if (!res.ok) throw new Error("http "+res.status);
+      return res.text();
+    }).then(function(text){
+      var parsed = parseCSV(text);
+      if (!parsed || !parsed.length) throw new Error("csv vazio ou colunas erradas");
+      rows = parsed;
+      try { localStorage.setItem(DATA_KEY, text); } catch(e){}
+      return true;
+    });
+  }
+
+  function initApp(){
+    document.getElementById("supSelect").addEventListener("change", function(e){
+      currentSup = e.target.value; cddFilter = "TODOS"; searchTerm = ""; document.getElementById("search").value="";
+      renderAll();
+    });
+    document.getElementById("search").addEventListener("input", function(e){ searchTerm = e.target.value; renderListView(); });
+
+    document.getElementById("viewListBtn").addEventListener("click", function(){
+      view = "lista";
+      document.getElementById("viewListBtn").classList.add("active");
+      document.getElementById("viewBoardBtn").classList.remove("active");
+      document.getElementById("listView").style.display = "";
+      document.getElementById("listToolbar").style.display = "";
+      document.getElementById("boardView").style.display = "none";
+      renderListView();
+    });
+    document.getElementById("viewBoardBtn").addEventListener("click", function(){
+      view = "semana";
+      document.getElementById("viewBoardBtn").classList.add("active");
+      document.getElementById("viewListBtn").classList.remove("active");
+      document.getElementById("boardView").style.display = "";
+      document.getElementById("listView").style.display = "none";
+      document.getElementById("listToolbar").style.display = "none";
+      renderBoardView();
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", function(){
+      var text = buildAgendaText();
+      var done = function(){
+        var btn = document.getElementById("copyBtn");
+        var old = btn.textContent; btn.textContent = "Copiado ✓";
+        setTimeout(function(){ btn.textContent = old; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text, done); });
+      } else { fallbackCopy(text, done); }
+    });
+
+    function fallbackCopy(text, done){
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch(e){}
+      document.body.removeChild(ta);
+    }
+
+    document.getElementById("downloadBtn").addEventListener("click", function(e){
+      if (e.currentTarget.disabled) return;
+      var xml = buildAgendaXLS();
+      var blob = new Blob([xml], {type:"application/vnd.ms-excel"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "agenda_"+(currentSup||"supervisor").replace(/\s+/g,"_")+".xls";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", function(){
+      var btn = this;
+      var old = btn.textContent;
+      btn.textContent = "Atualizando…"; btn.disabled = true;
+      fetchLatestData().then(function(){
+        renderSupSelect();
+        renderAll();
+        btn.textContent = "Atualizado ✓";
+        setTimeout(function(){ btn.textContent = old; btn.disabled = false; }, 1600);
+      }).catch(function(){
+        btn.textContent = old; btn.disabled = false;
+        if (confirm("Não consegui buscar dados novos no servidor. Quer carregar um CSV manualmente?")){
+          document.getElementById("app").classList.remove("show");
+          document.getElementById("intake").style.display = "flex";
+        }
+      });
+    });
+  }
+
+  function boot(){
+    initIntake();
+    initApp();
+    fetchLatestData().then(function(){
+      launchApp();
+    }).catch(function(){
+      var saved = null;
+      try { saved = localStorage.getItem(DATA_KEY); } catch(e){}
+      if (saved){
+        var parsed = parseCSV(saved);
+        if (parsed && parsed.length){
+          rows = parsed;
+          launchApp();
+          return;
+        }
+      }
+      showIntake();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
