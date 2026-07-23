@@ -380,12 +380,15 @@
   var STORE_KEY = "spot_agenda_visitas_v1";
   var SAVED_KEY = "spot_agenda_gravada_v1";
   var DATA_KEY = "spot_agenda_dados_v1";
+  var WEEK_KEY = "spot_agenda_semana_local_v1";
   var DATA_URL = "agenda_dados.csv";
+  var WEEK_URL = "agenda_semana.txt";
   var SYNC_URL = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
   var DETAIL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=1646888986&single=true&output=csv";
   var STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=2068477261&single=true&output=csv";
 
   var rows = [];
+  var WEEK_ID = ""; // semana publicada (vem de agenda_semana.txt); "" se ainda nao existir esse arquivo
   var assignments = {}; // { [supervisor]: { [chave]: [dayCode, ...] } }
   var savedState = {}; // { [supervisor]: { savedAt: 1234567890, snapshot: "{...}" } }
   var currentSup = null;
@@ -482,9 +485,13 @@
       });
     });
     var done = stores.filter(function(s){ return getDays(sup, s.chave).length > 0; }).length;
-    var d = new Date();
-    function pad(n){ return n<10 ? "0"+n : ""+n; }
-    var semana = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+    var semana = WEEK_ID;
+    if (!semana){
+      // fallback enquanto agenda_semana.txt ainda nao existe no repo (antes do .bat atualizado rodar)
+      var d = new Date();
+      function pad(n){ return n<10 ? "0"+n : ""+n; }
+      semana = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+    }
     return { supervisor: sup, semana: semana, totalPdvs: stores.length, totalAgendados: done, entries: entries };
   }
 
@@ -553,10 +560,13 @@
       var labelToCode = {};
       DAYS.forEach(function(d){ labelToCode[d.label] = d.code; });
 
+      var dSemanaIdx = idx["SEMANA"];
+
       var remoteAssign = {};
       for (var r=1; r<detailRows.length; r++){
         var row = detailRows[r];
         if ((row[idx["SUPERVISOR"]]||"") !== sup) continue;
+        if (WEEK_ID && dSemanaIdx>-1 && (row[dSemanaIdx]||"") !== WEEK_ID) continue;
         var chave = row[idx["CHAVE"]] || "";
         var dayCode = labelToCode[row[idx["DIA"]]];
         if (!chave || !dayCode) continue;
@@ -570,6 +580,7 @@
       var savedAtMs = null;
       for (var s=1; s<statusRows.length; s++){
         if ((statusRows[s][sIdx["SUPERVISOR"]]||"") !== sup) continue;
+        if (WEEK_ID && sIdx["SEMANA"]>-1 && (statusRows[s][sIdx["SEMANA"]]||"") !== WEEK_ID) continue;
         var iso = statusRows[s][sIdx["GRAVADO_EM"]];
         var parsed = iso ? new Date(iso).getTime() : NaN;
         savedAtMs = isNaN(parsed) ? Date.now() : parsed;
@@ -1018,6 +1029,7 @@
   function launchApp(){
     assignments = loadAssignments();
     savedState = loadSavedState();
+    resetIfNewWeek();
     currentSup = null;
     document.getElementById("bootScreen").style.display = "none";
     document.getElementById("intake").style.display = "none";
@@ -1033,6 +1045,10 @@
   }
 
   function fetchLatestData(){
+    var weekPromise = fetch(WEEK_URL, {cache:"no-store"}).then(function(res){
+      return res.ok ? res.text() : "";
+    }).catch(function(){ return ""; });
+
     return fetch(DATA_URL, {cache:"no-store"}).then(function(res){
       if (!res.ok) throw new Error("http "+res.status);
       return res.text();
@@ -1041,8 +1057,23 @@
       if (!parsed || !parsed.length) throw new Error("csv vazio ou colunas erradas");
       rows = parsed;
       try { localStorage.setItem(DATA_KEY, text); } catch(e){}
+      return weekPromise;
+    }).then(function(weekText){
+      WEEK_ID = (weekText||"").trim();
       return true;
     });
+  }
+
+  function resetIfNewWeek(){
+    if (!WEEK_ID) return; // agenda_semana.txt ainda nao existe no repo ou nao carregou - nao mexe em nada
+    var localWeek = null;
+    try { localWeek = localStorage.getItem(WEEK_KEY); } catch(e){}
+    if (localWeek === WEEK_ID) return;
+    assignments = {};
+    savedState = {};
+    saveAssignments();
+    persistSavedState();
+    try { localStorage.setItem(WEEK_KEY, WEEK_ID); } catch(e){}
   }
 
   function initApp(){
