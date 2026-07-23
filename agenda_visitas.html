@@ -381,6 +381,8 @@
   var DATA_KEY = "spot_agenda_dados_v1";
   var DATA_URL = "agenda_dados.csv";
   var SYNC_URL = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
+  var DETAIL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=1646888986&single=true&output=csv";
+  var STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=2068477261&single=true&output=csv";
 
   var rows = [];
   var assignments = {}; // { [supervisor]: { [chave]: [dayCode, ...] } }
@@ -475,7 +477,7 @@
     stores.forEach(function(s){
       getDays(sup, s.chave).forEach(function(d){
         var dayLabel = DAYS.filter(function(x){ return x.code===d; })[0].label;
-        entries.push({ dia: dayLabel, cdd: s.cdd, loja: s.loja, cidade: s.cidade, endereco: s.endereco, promotores: s.promotores.join(" | ") });
+        entries.push({ chave: s.chave, dia: dayLabel, cdd: s.cdd, loja: s.loja, cidade: s.cidade, endereco: s.endereco, promotores: s.promotores.join(" | ") });
       });
     });
     var done = stores.filter(function(s){ return getDays(sup, s.chave).length > 0; }).length;
@@ -507,6 +509,92 @@
       setTimeout(function(){ resolve(true); }, 900);
     });
   }
+  function parseCsvGeneric(text){
+    var rows = [];
+    var i=0, field="", row=[], inQuotes=false;
+    text = (text||"").replace(/\r\n/g,"\n").replace(/^﻿/,"");
+    while (i < text.length){
+      var c = text[i];
+      if (inQuotes){
+        if (c === '"'){
+          if (text[i+1] === '"'){ field += '"'; i+=2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += c; i++; continue;
+      } else {
+        if (c === '"'){ inQuotes = true; i++; continue; }
+        if (c === ','){ row.push(field); field=""; i++; continue; }
+        if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=""; i++; continue; }
+        field += c; i++; continue;
+      }
+    }
+    if (field.length || row.length){ row.push(field); rows.push(row); }
+    return rows.filter(function(r){ return r.length>1 || (r[0]||"").trim().length; });
+  }
+
+  function csvUrlWithCacheBust(url){
+    return url + (url.indexOf("?")>-1 ? "&" : "?") + "_=" + Date.now();
+  }
+
+  function fetchRemoteState(sup){
+    if (!DETAIL_CSV_URL || DETAIL_CSV_URL.indexOf("COLE_AQUI") === 0) return Promise.resolve(false);
+    return Promise.all([
+      fetch(csvUrlWithCacheBust(DETAIL_CSV_URL), {cache:"no-store"}).then(function(r){ return r.text(); }),
+      fetch(csvUrlWithCacheBust(STATUS_CSV_URL), {cache:"no-store"}).then(function(r){ return r.text(); })
+    ]).then(function(results){
+      var detailRows = parseCsvGeneric(results[0]);
+      var statusRows = parseCsvGeneric(results[1]);
+      if (!detailRows.length || !statusRows.length) return false;
+
+      var dHeader = detailRows[0];
+      var idx = {};
+      dHeader.forEach(function(h,i){ idx[h.trim().toUpperCase()] = i; });
+      var labelToCode = {};
+      DAYS.forEach(function(d){ labelToCode[d.label] = d.code; });
+
+      var remoteAssign = {};
+      for (var r=1; r<detailRows.length; r++){
+        var row = detailRows[r];
+        if ((row[idx["SUPERVISOR"]]||"") !== sup) continue;
+        var chave = row[idx["CHAVE"]] || "";
+        var dayCode = labelToCode[row[idx["DIA"]]];
+        if (!chave || !dayCode) continue;
+        if (!remoteAssign[chave]) remoteAssign[chave] = [];
+        if (remoteAssign[chave].indexOf(dayCode) === -1) remoteAssign[chave].push(dayCode);
+      }
+
+      var sHeader = statusRows[0];
+      var sIdx = {};
+      sHeader.forEach(function(h,i){ sIdx[h.trim().toUpperCase()] = i; });
+      var savedAtMs = null;
+      for (var s=1; s<statusRows.length; s++){
+        if ((statusRows[s][sIdx["SUPERVISOR"]]||"") !== sup) continue;
+        var iso = statusRows[s][sIdx["GRAVADO_EM"]];
+        var parsed = iso ? new Date(iso).getTime() : NaN;
+        savedAtMs = isNaN(parsed) ? Date.now() : parsed;
+        break;
+      }
+
+      if (Object.keys(remoteAssign).length && savedAtMs){
+        assignments[sup] = remoteAssign;
+        savedState[sup] = { savedAt: savedAtMs, snapshot: currentSnapshot(sup), locked: true, syncStatus: "ok" };
+        saveAssignments();
+        persistSavedState();
+        return true;
+      }
+      return false;
+    }).catch(function(){ return false; });
+  }
+
+  function syncFromRemoteAndRender(sup){
+    var eyebrow = document.getElementById("supEyebrow");
+    var old = eyebrow.textContent;
+    eyebrow.textContent = "Sincronizando com a planilha…";
+    fetchRemoteState(sup).then(function(changed){
+      if (currentSup === sup) renderAll();
+    });
+  }
+
   function formatSavedAt(ms){
     var d = new Date(ms);
     function pad(n){ return n<10 ? "0"+n : ""+n; }
@@ -935,6 +1023,7 @@
     document.getElementById("app").classList.add("show");
     renderSupSelect();
     renderAll();
+    if (currentSup) syncFromRemoteAndRender(currentSup);
   }
 
   function showIntake(){
@@ -960,6 +1049,7 @@
       currentSup = e.target.value;
       cddFilter = "TODOS"; cidadeFilter = "TODAS"; promotorFilter = "TODOS";
       renderAll();
+      syncFromRemoteAndRender(currentSup);
     });
 
     document.getElementById("downloadBtn").addEventListener("click", function(e){
