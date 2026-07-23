@@ -1068,10 +1068,26 @@
       var stores = storesForSupervisor(currentSup);
       var doneCount = stores.filter(function(s){ return getDays(currentSup, s.chave).length > 0; }).length;
       if (doneCount === 0) return;
-      showConfirm("Isso apaga "+doneCount+" loja"+(doneCount===1?"":"s")+" marcada"+(doneCount===1?"":"s")+" para "+currentSup+" nesta semana. Não dá pra desfazer.", function(){
-        assignments[currentSup] = {};
+      showConfirm("Isso apaga "+doneCount+" loja"+(doneCount===1?"":"s")+" marcada"+(doneCount===1?"":"s")+" para "+currentSup+" nesta semana e já atualiza a planilha do gestor para 0 agendados. Não dá pra desfazer.", function(){
+        var sup = currentSup;
+        var btn = document.getElementById("clearBtn");
+        assignments[sup] = {};
         saveAssignments();
+        savedState[sup] = { savedAt: Date.now(), snapshot: currentSnapshot(sup), locked: false, syncStatus: "sending" };
+        persistSavedState();
         renderAll();
+        btn.textContent = "Enviando ao gestor…"; btn.disabled = true;
+        syncToSheet(sup).then(function(){
+          if (savedState[sup]) savedState[sup].syncStatus = "ok";
+          persistSavedState();
+          btn.textContent = "Enviado ✓";
+          setTimeout(function(){ btn.textContent = "Limpar rota"; renderAll(); }, 1600);
+        }).catch(function(){
+          if (savedState[sup]) savedState[sup].syncStatus = "error";
+          persistSavedState();
+          btn.textContent = "Falha ao enviar";
+          setTimeout(function(){ btn.textContent = "Limpar rota"; renderAll(); }, 1600);
+        });
       });
     });
 
