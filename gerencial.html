@@ -306,7 +306,7 @@
   function renderStats(){
     var sups = Object.keys(roster).sort();
     var totalSup = sups.length;
-    var gravados = sups.filter(function(s){ return !!statusBySup[s]; }).length;
+    var gravados = sups.filter(function(s){ return statusBySup[s] && statusBySup[s].totalAgendados > 0; }).length;
 
     var totalPdvsGeral = 0, totalAgendadosGeral = 0;
     sups.forEach(function(s){
@@ -395,9 +395,10 @@
       var total = roster[sup].pdvs.length;
       var agendados = st ? st.totalAgendados : 0;
       var pct = total ? Math.round((agendados/total)*100) : 0;
+      var gravado = st && st.totalAgendados > 0;
       html += "<div class='sup-card' data-sup=\""+sup.replace(/"/g,"&quot;")+"\">";
       html += "<div class='sup-head'>";
-      html += "<span class='badge "+(st?"ok":"pending")+"'>"+(st?"GRAVADO":"PENDENTE")+"</span>";
+      html += "<span class='badge "+(gravado?"ok":"pending")+"'>"+(gravado?"GRAVADO":"PENDENTE")+"</span>";
       html += "<span class='name'>"+sup+"</span>";
       html += "<span class='pct'>"+agendados+"/"+total+" PDVs ("+pct+"%)"+(st&&st.gravadoEm?" · "+formatDateTime(st.gravadoEm):"")+"</span>";
       html += "<span class='chev'>›</span>";
