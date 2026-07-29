@@ -70,6 +70,8 @@
   .sup-actions{ border-top:1px solid var(--border); margin-top:14px; padding-top:14px; display:flex; align-items:center; gap:10px; }
   .btn-danger{ border-color:#c0392b; color:#c0392b; }
   .btn-danger:hover{ background:#fdecea; }
+  .btn-ghost{ border-color:var(--navy); color:var(--navy); }
+  .btn-ghost:hover{ background:#eef1f6; }
   .action-msg{ font-size:12px; color:var(--muted); }
 </style>
 
@@ -241,11 +243,13 @@
           if (!sup) continue;
           var semana = norm(srow[sIdx["SEMANA"]]);
           if (WEEK_ID && semana !== WEEK_ID) continue;
+          var lockedRaw = sIdx["LOCKED"]>-1 ? (srow[sIdx["LOCKED"]]||"") : "";
           statusBySup[sup] = {
             semana: semana,
             gravadoEm: srow[sIdx["GRAVADO_EM"]] || "",
             totalPdvs: parseInt(srow[sIdx["TOTAL_PDVS"]], 10) || 0,
-            totalAgendados: parseInt(srow[sIdx["TOTAL_AGENDADOS"]], 10) || 0
+            totalAgendados: parseInt(srow[sIdx["TOTAL_AGENDADOS"]], 10) || 0,
+            locked: sIdx["LOCKED"]>-1 ? (lockedRaw.trim().toUpperCase() === "SIM") : (parseInt(srow[sIdx["TOTAL_AGENDADOS"]],10) > 0)
           };
         }
       }
@@ -272,14 +276,7 @@
     });
   }
 
-  function resetSupervisor(sup){
-    var payload = {
-      supervisor: sup,
-      semana: WEEK_ID,
-      totalPdvs: roster[sup] ? roster[sup].pdvs.length : 0,
-      totalAgendados: 0,
-      entries: []
-    };
+  function postToSheet(payload){
     return new Promise(function(resolve){
       var iframe = document.getElementById("syncFrame");
       var form = document.createElement("form");
@@ -299,6 +296,20 @@
     });
   }
 
+  function resetSupervisor(sup){
+    return postToSheet({
+      supervisor: sup,
+      semana: WEEK_ID,
+      totalPdvs: roster[sup] ? roster[sup].pdvs.length : 0,
+      totalAgendados: 0,
+      entries: []
+    });
+  }
+
+  function unlockSupervisor(sup){
+    return postToSheet({ action: "unlock", supervisor: sup, semana: WEEK_ID });
+  }
+
   function formatDateTime(iso){
     if (!iso) return "";
     var d = new Date(iso);
@@ -310,7 +321,7 @@
   function renderStats(){
     var sups = Object.keys(roster).sort();
     var totalSup = sups.length;
-    var gravados = sups.filter(function(s){ return statusBySup[s] && statusBySup[s].totalAgendados > 0; }).length;
+    var gravados = sups.filter(function(s){ return statusBySup[s] && statusBySup[s].locked; }).length;
 
     var totalPdvsGeral = 0, totalAgendadosGeral = 0;
     var score5TotalGeral = 0, score5AgendadosGeral = 0;
@@ -392,6 +403,9 @@
 
     if (statusBySup[sup]){
       html += "<div class='sup-actions'>";
+      if (statusBySup[sup].locked){
+        html += "<button class='btn-ghost' data-unlock-sup=\""+sup.replace(/"/g,"&quot;")+"\">Liberar para edição</button>";
+      }
       html += "<button class='btn-danger' data-reset-sup=\""+sup.replace(/"/g,"&quot;")+"\">Zerar agenda desta semana</button>";
       html += "<span class='action-msg'></span>";
       html += "</div>";
@@ -408,7 +422,7 @@
       var total = roster[sup].pdvs.length;
       var agendados = st ? st.totalAgendados : 0;
       var pct = total ? Math.round((agendados/total)*100) : 0;
-      var gravado = st && st.totalAgendados > 0;
+      var gravado = st && st.locked;
       html += "<div class='sup-card' data-sup=\""+sup.replace(/"/g,"&quot;")+"\">";
       html += "<div class='sup-head'>";
       html += "<span class='badge "+(gravado?"ok":"pending")+"'>"+(gravado?"GRAVADO":"PENDENTE")+"</span>";
@@ -436,21 +450,40 @@
     });
 
     document.getElementById("supList").addEventListener("click", function(e){
-      var btn = e.target.closest("[data-reset-sup]");
-      if (!btn) return;
-      e.stopPropagation();
-      var sup = btn.getAttribute("data-reset-sup");
-      if (!confirm("Isso zera a agenda de "+sup+" para a semana atual, liberando pra ele refazer do zero. Não dá pra desfazer. Confirma?")) return;
-      var msg = btn.parentElement.querySelector(".action-msg");
-      btn.disabled = true;
-      msg.textContent = "Zerando…";
-      resetSupervisor(sup).then(function(){
-        msg.textContent = "Zerado ✓ atualizando painel…";
-        return loadAll();
-      }).catch(function(){
-        msg.textContent = "Falha ao zerar — tente de novo.";
-        btn.disabled = false;
-      });
+      var resetBtn = e.target.closest("[data-reset-sup]");
+      if (resetBtn){
+        e.stopPropagation();
+        var sup = resetBtn.getAttribute("data-reset-sup");
+        if (!confirm("Isso zera a agenda de "+sup+" para a semana atual, liberando pra ele refazer do zero. Não dá pra desfazer. Confirma?")) return;
+        var msg = resetBtn.parentElement.querySelector(".action-msg");
+        resetBtn.disabled = true;
+        msg.textContent = "Zerando…";
+        resetSupervisor(sup).then(function(){
+          msg.textContent = "Zerado ✓ atualizando painel…";
+          return loadAll();
+        }).catch(function(){
+          msg.textContent = "Falha ao zerar — tente de novo.";
+          resetBtn.disabled = false;
+        });
+        return;
+      }
+
+      var unlockBtn = e.target.closest("[data-unlock-sup]");
+      if (unlockBtn){
+        e.stopPropagation();
+        var supU = unlockBtn.getAttribute("data-unlock-sup");
+        if (!confirm("Isso libera "+supU+" pra editar a agenda desta semana de novo, mantendo o que já estava marcado. Confirma?")) return;
+        var msgU = unlockBtn.parentElement.querySelector(".action-msg");
+        unlockBtn.disabled = true;
+        msgU.textContent = "Liberando…";
+        unlockSupervisor(supU).then(function(){
+          msgU.textContent = "Liberado ✓ atualizando painel…";
+          return loadAll();
+        }).catch(function(){
+          msgU.textContent = "Falha ao liberar — tente de novo.";
+          unlockBtn.disabled = false;
+        });
+      }
     });
   }
 

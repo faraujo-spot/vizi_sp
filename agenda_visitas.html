@@ -196,9 +196,16 @@
   .store-row{
     display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
     padding:10px 12px; border:1px solid var(--line-soft); border-radius:9px; background:var(--surface);
-    margin-bottom:6px;
+    margin-bottom:6px; position:relative;
   }
   .store-row .info{ min-width:0; }
+  .store-row .remove-x{
+    position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%;
+    background:var(--ink); color:var(--surface); border:2px solid var(--surface);
+    font-size:12px; line-height:1; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-weight:700; padding:0;
+  }
+  .store-row .remove-x:hover{ background:#c0392b; }
   .store-row .loja{ font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .store-row .meta{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .store-row .meta .sep{ margin:0 5px; opacity:.5; }
@@ -590,20 +597,23 @@
       var sIdx = {};
       sHeader.forEach(function(h,i){ sIdx[h.trim().toUpperCase()] = i; });
       var savedAtMs = null;
+      var lockedRaw = "";
       for (var s=1; s<statusRows.length; s++){
         if ((statusRows[s][sIdx["SUPERVISOR"]]||"") !== sup) continue;
         if (WEEK_ID && sIdx["SEMANA"]>-1 && (statusRows[s][sIdx["SEMANA"]]||"") !== WEEK_ID) continue;
         var iso = statusRows[s][sIdx["GRAVADO_EM"]];
         var parsed = iso ? new Date(iso).getTime() : NaN;
         savedAtMs = isNaN(parsed) ? Date.now() : parsed;
+        lockedRaw = sIdx["LOCKED"]>-1 ? (statusRows[s][sIdx["LOCKED"]]||"") : "";
         break;
       }
 
       if (savedAtMs === null) return false; // sem registro da planilha pra semana atual - nao mexe no estado local
 
-      var temAgendamentos = Object.keys(remoteAssign).length > 0;
-      assignments[sup] = remoteAssign; // se vazio, reflete reset feito pelo proprio supervisor ou pelo admin
-      savedState[sup] = { savedAt: savedAtMs, snapshot: currentSnapshot(sup), locked: temAgendamentos, syncStatus: "ok" };
+      // se a planilha nao tiver a coluna LOCKED ainda (antes da migracao), volta pro criterio antigo
+      var locked = sIdx["LOCKED"]>-1 ? (lockedRaw.trim().toUpperCase() === "SIM") : (Object.keys(remoteAssign).length > 0);
+      assignments[sup] = remoteAssign; // preserva o que estiver gravado, mesmo se liberado pra edicao
+      savedState[sup] = { savedAt: savedAtMs, snapshot: currentSnapshot(sup), locked: locked, syncStatus: "ok" };
       saveAssignments();
       persistSavedState();
       return true;
@@ -694,6 +704,13 @@
     else { days = days.concat([code]); }
     if (days.length) assignments[sup][chave] = days;
     else delete assignments[sup][chave];
+    saveAssignments();
+    renderAll();
+  }
+
+  function clearPdv(sup, chave){
+    if (!assignments[sup]) return;
+    delete assignments[sup][chave];
     saveAssignments();
     renderAll();
   }
@@ -913,7 +930,10 @@
       var list = groups[cdd];
       return '<div class="group-head">'+escapeHtml(cdd)+'<span class="count">'+list.length+' PDV'+(list.length===1?"":"s")+'</span></div>' +
         list.map(function(s){
+          var hasDays = getDays(currentSup, s.chave).length > 0;
+          var locked = isLocked(currentSup);
           return '<div class="store-row'+(s.score5?" score5":"")+'">' +
+            (hasDays && !locked ? '<button class="remove-x" data-chave="'+escapeAttr(s.chave)+'" title="Remover esta loja da semana">×</button>' : "") +
             '<div class="info">' +
               '<div class="loja">'+(s.score5?'<span class="score5-star">★</span>':"")+escapeHtml(s.loja)+'</div>' +
               '<div class="meta">'+escapeHtml(s.cidade)+'<span class="sep">·</span>'+escapeHtml(s.promotores.join(" | "))+'</div>' +
@@ -928,6 +948,12 @@
     Array.prototype.forEach.call(document.querySelectorAll("#pdvList .day-btn"), function(btn){
       btn.addEventListener("click", function(){
         toggleDay(currentSup, btn.getAttribute("data-chave"), btn.getAttribute("data-day"));
+      });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("#pdvList .remove-x"), function(btn){
+      btn.addEventListener("click", function(){
+        clearPdv(currentSup, btn.getAttribute("data-chave"));
       });
     });
   }
