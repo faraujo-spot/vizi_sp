@@ -58,7 +58,9 @@
   .pdv-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
   .pdv-row:last-child{ border-bottom:none; }
   .pdv-row .info{ flex:1; min-width:0; }
+  .pdv-row.score5{ background:#fff7e0; border-radius:8px; margin:0 -8px; padding:8px; border-bottom-color:#e8c766; }
   .pdv-row .loja{ font-weight:600; }
+  .score5-star{ color:#b8860b; font-weight:700; margin-right:4px; }
   .pdv-row .meta{ color:var(--muted); font-size:12px; }
   .pdv-row .days{ display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
   .pdv-row .day-pill{ font-size:11px; padding:2px 7px; border-radius:6px; background:var(--navy); color:var(--navy-ink); font-weight:700; }
@@ -139,6 +141,7 @@
       }
     }
     var iCidade = findCol(header, ["CIDADE"]);
+    var iScore5 = findCol(header, ["SCORE5", "SCORE 5"]);
 
     if (iSupervisor === -1 || iLoja === -1){ return null; }
 
@@ -156,7 +159,8 @@
         chave: chave || (loja+"_"+l),
         loja: loja,
         endereco: iEndereco>-1 ? norm(cols[iEndereco]) : "",
-        cidade: iCidade>-1 ? norm(cols[iCidade]) : ""
+        cidade: iCidade>-1 ? norm(cols[iCidade]) : "",
+        score5: iScore5>-1 ? norm(cols[iScore5]).toUpperCase() === "SIM" : false
       });
     }
     return out;
@@ -365,8 +369,8 @@
       html += "<div class='cdd-group'><h4>"+cdd+" · "+byGroup[cdd].length+" PDVs</h4>";
       byGroup[cdd].forEach(function(p){
         var diasMarcados = det[p.chave] || [];
-        html += "<div class='pdv-row'>";
-        html += "<div class='info'><div class='loja'>"+p.loja+"</div><div class='meta'>"+p.cidade+(p.promotor?" · "+p.promotor:"")+"</div></div>";
+        html += "<div class='pdv-row"+(p.score5?" score5":"")+"'>";
+        html += "<div class='info'><div class='loja'>"+(p.score5?"<span class='score5-star'>★</span>":"")+p.loja+"</div><div class='meta'>"+p.cidade+(p.promotor?" · "+p.promotor:"")+"</div></div>";
         html += "<div class='days'>";
         DAYS.forEach(function(d){
           var marcado = diasMarcados.indexOf(d.label) > -1;
