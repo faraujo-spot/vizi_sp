@@ -65,6 +65,10 @@
   .pdv-row .day-pill.off{ background:transparent; color:var(--muted); border:1px dashed var(--border); }
   .empty{ color:var(--muted); font-size:13px; padding:20px 0; text-align:center; }
   .eyebrow{ color:var(--muted); font-size:13px; margin-bottom:14px; }
+  .sup-actions{ border-top:1px solid var(--border); margin-top:14px; padding-top:14px; display:flex; align-items:center; gap:10px; }
+  .btn-danger{ border-color:#c0392b; color:#c0392b; }
+  .btn-danger:hover{ background:#fdecea; }
+  .action-msg{ font-size:12px; color:var(--muted); }
 </style>
 
 <div class="wrap">
@@ -81,6 +85,7 @@
   <div class="eyebrow" id="eyebrow"></div>
   <div class="sup-list" id="supList"></div>
 </div>
+<iframe name="syncFrame" id="syncFrame" style="display:none"></iframe>
 
 <script>
 (function(){
@@ -88,6 +93,7 @@
 
   var DATA_URL = "agenda_dados.csv";
   var WEEK_URL = "agenda_semana.txt";
+  var SYNC_URL = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
   var DETAIL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=1646888986&single=true&output=csv";
   var STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=2068477261&single=true&output=csv";
 
@@ -262,6 +268,33 @@
     });
   }
 
+  function resetSupervisor(sup){
+    var payload = {
+      supervisor: sup,
+      semana: WEEK_ID,
+      totalPdvs: roster[sup] ? roster[sup].pdvs.length : 0,
+      totalAgendados: 0,
+      entries: []
+    };
+    return new Promise(function(resolve){
+      var iframe = document.getElementById("syncFrame");
+      var form = document.createElement("form");
+      form.method = "POST";
+      form.action = SYNC_URL;
+      form.target = "syncFrame";
+      form.style.display = "none";
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "payload";
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      setTimeout(function(){ resolve(true); }, 900);
+    });
+  }
+
   function formatDateTime(iso){
     if (!iso) return "";
     var d = new Date(iso);
@@ -344,6 +377,13 @@
       html += "</div>";
     });
 
+    if (statusBySup[sup]){
+      html += "<div class='sup-actions'>";
+      html += "<button class='btn-danger' data-reset-sup=\""+sup.replace(/"/g,"&quot;")+"\">Zerar agenda desta semana</button>";
+      html += "<span class='action-msg'></span>";
+      html += "</div>";
+    }
+
     return html;
   }
 
@@ -378,6 +418,24 @@
         var sup = card.getAttribute("data-sup");
         card.querySelector(".sup-body").innerHTML = renderSupBody(sup);
         card.classList.add("open");
+      });
+    });
+
+    document.getElementById("supList").addEventListener("click", function(e){
+      var btn = e.target.closest("[data-reset-sup]");
+      if (!btn) return;
+      e.stopPropagation();
+      var sup = btn.getAttribute("data-reset-sup");
+      if (!confirm("Isso zera a agenda de "+sup+" para a semana atual, liberando pra ele refazer do zero. Não dá pra desfazer. Confirma?")) return;
+      var msg = btn.parentElement.querySelector(".action-msg");
+      btn.disabled = true;
+      msg.textContent = "Zerando…";
+      resetSupervisor(sup).then(function(){
+        msg.textContent = "Zerado ✓ atualizando painel…";
+        return loadAll();
+      }).catch(function(){
+        msg.textContent = "Falha ao zerar — tente de novo.";
+        btn.disabled = false;
       });
     });
   }

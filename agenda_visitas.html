@@ -587,14 +587,14 @@
         break;
       }
 
-      if (Object.keys(remoteAssign).length && savedAtMs){
-        assignments[sup] = remoteAssign;
-        savedState[sup] = { savedAt: savedAtMs, snapshot: currentSnapshot(sup), locked: true, syncStatus: "ok" };
-        saveAssignments();
-        persistSavedState();
-        return true;
-      }
-      return false;
+      if (savedAtMs === null) return false; // sem registro da planilha pra semana atual - nao mexe no estado local
+
+      var temAgendamentos = Object.keys(remoteAssign).length > 0;
+      assignments[sup] = remoteAssign; // se vazio, reflete reset feito pelo proprio supervisor ou pelo admin
+      savedState[sup] = { savedAt: savedAtMs, snapshot: currentSnapshot(sup), locked: temAgendamentos, syncStatus: "ok" };
+      saveAssignments();
+      persistSavedState();
+      return true;
     }).catch(function(){ return false; });
   }
 
