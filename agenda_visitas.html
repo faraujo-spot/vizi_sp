@@ -853,13 +853,7 @@
     el.innerHTML = '<span>🔒 Agenda gravada em '+formatSavedAt(saved.savedAt)+' — travada para edição nesta semana.'+statusText+'</span>' +
       '<div style="display:flex;gap:8px;">' +
       (saved.syncStatus === "error" ? '<button class="btn small ghost" id="retrySyncBtn">Tentar enviar de novo</button>' : '') +
-      '<button class="btn small ghost" id="unlockBtn">Editar novamente</button>' +
       '</div>';
-    document.getElementById("unlockBtn").addEventListener("click", function(){
-      savedState[currentSup].locked = false;
-      persistSavedState();
-      renderAll();
-    });
     var retryBtn = document.getElementById("retrySyncBtn");
     if (retryBtn) retryBtn.addEventListener("click", function(){ retrySync(currentSup); });
   }
