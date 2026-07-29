@@ -313,18 +313,27 @@
     var gravados = sups.filter(function(s){ return statusBySup[s] && statusBySup[s].totalAgendados > 0; }).length;
 
     var totalPdvsGeral = 0, totalAgendadosGeral = 0;
+    var score5TotalGeral = 0, score5AgendadosGeral = 0;
     sups.forEach(function(s){
       totalPdvsGeral += roster[s].pdvs.length;
       totalAgendadosGeral += (statusBySup[s] ? statusBySup[s].totalAgendados : 0);
+      var det = detailBySup[s] || {};
+      roster[s].pdvs.forEach(function(p){
+        if (!p.score5) return;
+        score5TotalGeral++;
+        if (det[p.chave] && det[p.chave].length) score5AgendadosGeral++;
+      });
     });
 
     var pctSup = totalSup ? Math.round((gravados/totalSup)*100) : 0;
     var pctPdv = totalPdvsGeral ? Math.round((totalAgendadosGeral/totalPdvsGeral)*100) : 0;
+    var pctScore5 = score5TotalGeral ? Math.round((score5AgendadosGeral/score5TotalGeral)*100) : 0;
 
     var html = "";
     html += "<div class='stat-card'><div class='label'>Supervisores gravaram</div><div class='value'>"+gravados+"/"+totalSup+"</div><div class='sub'>"+pctSup+"% da equipe</div></div>";
     html += "<div class='stat-card'><div class='label'>Pendentes</div><div class='value'>"+(totalSup-gravados)+"</div><div class='sub'>ainda não gravaram esta semana</div></div>";
     html += "<div class='stat-card'><div class='label'>PDVs agendados</div><div class='value'>"+totalAgendadosGeral+"/"+totalPdvsGeral+"</div><div class='sub'>"+pctPdv+"% da carteira total</div></div>";
+    html += "<div class='stat-card'><div class='label'>★ Score 5 agendados</div><div class='value'>"+score5AgendadosGeral+"/"+score5TotalGeral+"</div><div class='sub'>"+pctScore5+"% dos PDVs Score 5</div></div>";
     document.getElementById("statsRow").innerHTML = html;
   }
 
