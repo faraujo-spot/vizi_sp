@@ -413,7 +413,19 @@
             motivoOnepage: row[idx["MOTIVO_ONEPAGE"]] || ""
           };
         }
-        if (!Object.keys(found).length) return false; // sem registro da planilha pra semana atual - nao mexe no estado local
+        // O remoto manda: se nao tem nenhuma linha dessa semana pra esse supervisor
+        // (seja porque ele ainda nao respondeu nada, seja porque um admin zerou a
+        // planilha no meio da semana), o estado local tambem zera. Antes isso so
+        // acontecia na virada de semana (resetIfNewWeek) — sem essa parte, um
+        // navegador que ja tinha resposta em cache continuava mostrando o valor
+        // antigo mesmo depois da planilha ser limpa.
+        if (!Object.keys(found).length){
+          if (answers[sup] && Object.keys(answers[sup]).length){
+            answers[sup] = {};
+            saveAnswers();
+          }
+          return true;
+        }
 
         answers[sup] = found;
         saveAnswers();
