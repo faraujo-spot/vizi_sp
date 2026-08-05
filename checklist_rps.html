@@ -1,0 +1,639 @@
+<meta charset="UTF-8">
+<title>Checklist RPS &amp; One Page — Supervisor</title>
+<style>
+  :root{
+    --bg:#f5f3ee;
+    --surface:#ffffff;
+    --surface-2:#faf9f5;
+    --ink:#23241f;
+    --muted:#726d5c;
+    --line:#ddd7c4;
+    --line-soft:#e9e4d5;
+    --accent:#bd511e;
+    --accent-ink:#fff8f1;
+    --accent-soft:rgba(189,81,30,0.10);
+    --success:#3c7156;
+    --success-soft:rgba(60,113,86,0.13);
+    --danger:#a1332a;
+    --danger-soft:rgba(161,51,42,0.10);
+    --shadow:0 1px 2px rgba(35,32,25,0.06), 0 8px 24px -12px rgba(35,32,25,0.18);
+    --radius:10px;
+    --sans: -apple-system, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1b1a16; --surface:#242219; --surface-2:#2b2920; --ink:#efeade; --muted:#a49c85;
+      --line:#3c3828; --line-soft:#332f22; --accent:#e0824f; --accent-ink:#231a12;
+      --accent-soft:rgba(224,130,79,0.14); --success:#73b291; --success-soft:rgba(115,178,145,0.16);
+      --danger:#e0776b; --danger-soft:rgba(224,119,107,0.14);
+      --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1b1a16; --surface:#242219; --surface-2:#2b2920; --ink:#efeade; --muted:#a49c85;
+    --line:#3c3828; --line-soft:#332f22; --accent:#e0824f; --accent-ink:#231a12;
+    --accent-soft:rgba(224,130,79,0.14); --success:#73b291; --success-soft:rgba(115,178,145,0.16);
+    --danger:#e0776b; --danger-soft:rgba(224,119,107,0.14);
+    --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f3ee; --surface:#ffffff; --surface-2:#faf9f5; --ink:#23241f; --muted:#726d5c;
+    --line:#ddd7c4; --line-soft:#e9e4d5; --accent:#bd511e; --accent-ink:#fff8f1;
+    --accent-soft:rgba(189,81,30,0.10); --success:#3c7156; --success-soft:rgba(60,113,86,0.13);
+    --danger:#a1332a; --danger-soft:rgba(161,51,42,0.10);
+    --shadow:0 1px 2px rgba(35,32,25,0.06), 0 8px 24px -12px rgba(35,32,25,0.18);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent-soft); }
+  button{ font-family:inherit; }
+
+  .eyebrow{ text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:700; color:var(--muted); }
+
+  #boot{ min-height:100vh; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px; }
+  #bootError{ display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
+  .error-card{
+    max-width:480px; background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); padding:28px; text-align:center;
+  }
+  .error-card h1{ font-size:17px; margin:0 0 8px; }
+  .error-card p{ color:var(--muted); font-size:13px; margin:0 0 16px; }
+
+  #app{ display:none; min-height:100vh; }
+  #app.show{ display:flex; }
+  #sidebar{
+    width:280px; flex:0 0 auto; border-right:1px solid var(--line); background:var(--surface);
+    display:flex; flex-direction:column; padding:16px 18px; gap:14px; height:100vh; position:sticky; top:0;
+    overflow-y:auto;
+  }
+  .brand{ display:flex; align-items:baseline; gap:8px; }
+  .brand .mark{ font-size:18px; }
+  .brand h2{ font-size:15px; margin:0; letter-spacing:-.01em; }
+  select#supSelect{
+    width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-size:13.5px; font-weight:600;
+  }
+  .stat-block{ display:flex; flex-direction:column; gap:5px; }
+  .stat-row{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; }
+  .stat-row .n{ font-variant-numeric:tabular-nums; font-weight:700; }
+  .bar{ height:6px; border-radius:4px; background:var(--line-soft); overflow:hidden; flex:1; }
+  .bar > i{ display:block; height:100%; background:var(--success); border-radius:4px 0 0 4px; transition:width .2s; }
+  .bar-row{ display:flex; align-items:center; gap:8px; }
+  .bar-pct{ font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; min-width:30px; text-align:right; }
+
+  .btn{
+    appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    border-radius:8px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px; transition:border-color .15s, background .15s, transform .05s;
+  }
+  .btn:hover{ border-color:var(--accent); }
+  .btn:active{ transform:translateY(1px); }
+  .btn.ghost{ background:transparent; border-color:transparent; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); border-color:var(--line); }
+  .btn.small{ padding:6px 10px; font-size:12px; }
+
+  .sync-status{
+    margin-top:auto; padding-top:12px; border-top:1px solid var(--line-soft);
+    font-size:11.5px; color:var(--muted); line-height:1.5;
+  }
+  .sync-status.ok{ color:var(--success); }
+  .sync-status.error{ color:var(--danger); }
+
+  #main{ flex:1; min-width:0; padding:22px 28px 60px; }
+  .topbar{ margin-bottom:18px; }
+  .topbar h1{ font-size:19px; margin:2px 0 2px; letter-spacing:-.01em; }
+  .topbar .sub{ color:var(--muted); font-size:13px; max-width:64ch; }
+
+  .cdd-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:18px 20px; margin-bottom:14px; box-shadow:var(--shadow);
+  }
+  .cdd-card h3{ margin:0 0 14px; font-size:15px; letter-spacing:-.01em; }
+  .cdd-card h3 .ok-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; background:var(--line); vertical-align:middle; }
+  .cdd-card.complete h3 .ok-dot{ background:var(--success); }
+
+  .question{ margin-bottom:14px; }
+  .question:last-child{ margin-bottom:0; }
+  .q-label{ font-size:13px; font-weight:600; margin-bottom:8px; }
+  .yn-toggle{ display:flex; gap:8px; margin-bottom:8px; }
+  .yn-btn{
+    padding:7px 18px; border-radius:8px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--muted); font-size:13px; font-weight:700; cursor:pointer; transition:all .12s;
+  }
+  .yn-btn:hover{ border-color:var(--accent); color:var(--ink); }
+  .yn-btn.on.sim{ background:var(--success-soft); border-color:var(--success); color:var(--success); }
+  .yn-btn.on.nao{ background:var(--danger-soft); border-color:var(--danger); color:var(--danger); }
+
+  .cond-field{ margin-top:6px; }
+  .cond-field input[type="date"], .cond-field select{
+    width:100%; max-width:420px; border-radius:8px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); padding:8px 10px; font:13px var(--sans);
+  }
+  .cond-hint{ font-size:11.5px; color:var(--danger); margin-top:4px; display:none; }
+  .cond-hint.show{ display:block; }
+
+  @media (max-width: 720px){
+    #app.show{ flex-direction:column; }
+    #sidebar{ width:auto; height:auto; position:static; border-right:none; border-bottom:1px solid var(--line); }
+  }
+</style>
+
+<div id="boot">Carregando checklist…</div>
+
+<div id="bootError">
+  <div class="error-card">
+    <h1>Não consegui carregar os dados</h1>
+    <p>Confira sua conexão e tente de novo. Se o problema continuar, avise o gestor.</p>
+    <button class="btn primary" id="retryBootBtn">Tentar de novo</button>
+  </div>
+</div>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand"><span class="mark">✅</span><h2>Checklist RPS &amp; One Page</h2></div>
+
+    <div>
+      <label for="supSelect" class="eyebrow">Supervisor</label><br/>
+      <select id="supSelect"></select>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-row"><span>CDDs na carteira</span><span class="n" id="statTotal">0</span></div>
+      <div class="stat-row"><span>Respondidos</span><span class="n" id="statDone">0</span></div>
+      <div class="bar-row"><div class="bar"><i id="statBar" style="width:0%"></i></div><span class="bar-pct" id="statPct">0%</span></div>
+    </div>
+
+    <div class="sync-status" id="syncStatus"></div>
+  </aside>
+
+  <main id="main">
+    <div class="topbar">
+      <div class="eyebrow" id="supEyebrow">Supervisor</div>
+      <h1 id="supName">—</h1>
+      <div class="sub">Para cada CDD da sua carteira, informe se a RPS com o GV/GC foi feita essa semana e se o One Page já foi enviado por e-mail (com cópia à gestão SPOT). Cada resposta já salva sozinha, na hora.</div>
+    </div>
+
+    <div id="cddList"></div>
+  </main>
+</div>
+
+<iframe name="syncFrame" id="syncFrame" style="display:none;" title="sync"></iframe>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORE_KEY = "spot_rps_respostas_v1";
+  var DATA_KEY  = "spot_rps_roster_v1";
+  var WEEK_KEY  = "spot_rps_semana_local_v1";
+  var DATA_URL  = "rps_cdds.csv";
+  var WEEK_URL  = "agenda_semana.txt";
+  var SYNC_URL  = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
+  var RPS_STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=61938302&single=true&output=csv";
+
+  var RPS_MOTIVOS = ["GV sem agenda", "GV de férias", "Sem GV", "Sem Supervisor", "Supervisor de férias", "Visita Ambev", "Outro"];
+
+  var roster = []; // [{supervisor, cdd}]
+  var WEEK_ID = "";
+  var answers = {}; // { [sup]: { [cdd]: {fezRps, dataRps, motivoRps, enviouOnepage, motivoOnepage} } }
+  var currentSup = null;
+  var syncState = { status: "idle", at: null }; // idle | sending | ok | error
+
+  function norm(s){ return (s||"").toString().trim(); }
+  function pad(n){ return n<10 ? "0"+n : ""+n; }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function escapeHtml(s){ return (s||"").toString().replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  /* ---------------- CSV parsing (com aspas, igual agenda_visitas.html) ---------------- */
+  function parseCsvGeneric(text){
+    var rows = [];
+    var i=0, field="", row=[], inQuotes=false;
+    text = (text||"").replace(/\r\n/g,"\n").replace(/^﻿/,"");
+    while (i < text.length){
+      var c = text[i];
+      if (inQuotes){
+        if (c === '"'){
+          if (text[i+1] === '"'){ field += '"'; i+=2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += c; i++; continue;
+      } else {
+        if (c === '"'){ inQuotes = true; i++; continue; }
+        if (c === ','){ row.push(field); field=""; i++; continue; }
+        if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=""; i++; continue; }
+        field += c; i++; continue;
+      }
+    }
+    if (field.length || row.length){ row.push(field); rows.push(row); }
+    return rows.filter(function(r){ return r.length>1 || (r[0]||"").trim().length; });
+  }
+
+  function parseRoster(text){
+    var rows = parseCsvGeneric(text);
+    if (!rows.length) return null;
+    var header = rows[0].map(function(h){ return h.trim().toUpperCase(); });
+    var iSup = header.indexOf("SUPERVISOR");
+    var iCdd = header.indexOf("CDD");
+    if (iSup === -1 || iCdd === -1) return null;
+    var out = [];
+    for (var r=1; r<rows.length; r++){
+      var sup = norm(rows[r][iSup]);
+      var cdd = norm(rows[r][iCdd]);
+      if (!sup || !cdd) continue;
+      out.push({ supervisor: sup, cdd: cdd });
+    }
+    return out;
+  }
+
+  function csvUrlWithCacheBust(url){
+    return url + (url.indexOf("?")>-1 ? "&" : "?") + "_=" + Date.now();
+  }
+
+  /* ---------------- storage ---------------- */
+  function loadAnswers(){ try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch(e){ return {}; } }
+  function saveAnswers(){ localStorage.setItem(STORE_KEY, JSON.stringify(answers)); }
+
+  /* ---------------- data model ---------------- */
+  function uniqueSupervisors(){
+    var s = new Set();
+    roster.forEach(function(r){ s.add(r.supervisor); });
+    return Array.from(s).sort();
+  }
+  function cddsForSupervisor(sup){
+    var s = new Set();
+    roster.forEach(function(r){ if (r.supervisor === sup) s.add(r.cdd); });
+    return Array.from(s).sort();
+  }
+  function getAnswer(sup, cdd){
+    return (answers[sup] && answers[sup][cdd]) || {};
+  }
+  function setField(sup, cdd, field, value){
+    if (!answers[sup]) answers[sup] = {};
+    if (!answers[sup][cdd]) answers[sup][cdd] = {};
+    answers[sup][cdd][field] = value;
+    saveAnswers();
+  }
+  function isComplete(entry){
+    var rpsOk = entry.fezRps === "SIM" ? !!entry.dataRps
+              : entry.fezRps === "NAO" ? !!(entry.motivoRps && entry.motivoRps.trim())
+              : false;
+    var opOk = entry.enviouOnepage === "SIM" || entry.enviouOnepage === "NAO";
+    return rpsOk && opOk;
+  }
+
+  // Usado pelos botoes Sim/Nao: a estrutura da tela muda (mostra/esconde campo
+  // condicional), entao um render completo e necessario — nao ha foco a perder
+  // porque e um clique, nao digitacao continua. Sincroniza na hora.
+  function setFieldStructural(sup, cdd, field, value){
+    setField(sup, cdd, field, value);
+    renderMain();
+    renderSidebar();
+    syncCurrentSupervisor(sup);
+  }
+
+  // Usado pelos campos de texto/data: NAO reconstroi o DOM a cada tecla (senao o
+  // input perde o foco). So atualiza o estado e o que muda visualmente sem tocar
+  // no input. A sincronizacao de verdade so dispara em onCommit (blur/change),
+  // nao a cada tecla — senao viraria um POST por letra digitada no motivo.
+  function setFieldLight(sup, cdd, field, value, inputEl){
+    setField(sup, cdd, field, value);
+    var cardEl = inputEl.closest(".cdd-card");
+    if (cardEl) cardEl.classList.toggle("complete", isComplete(getAnswer(sup, cdd)));
+    var questionEl = inputEl.closest(".question");
+    if (questionEl){
+      var hint = questionEl.querySelector(".cond-hint");
+      if (hint) hint.classList.toggle("show", !value || !value.trim());
+    }
+    renderSidebar();
+  }
+
+  /* ---------------- sync ---------------- */
+  function buildSyncPayload(sup){
+    var cdds = cddsForSupervisor(sup);
+    var entries = cdds.map(function(cdd){
+      var e = getAnswer(sup, cdd);
+      return {
+        cdd: cdd,
+        fezRps: e.fezRps || "",
+        dataRps: e.dataRps || "",
+        motivoRps: e.motivoRps || "",
+        enviouOnepage: e.enviouOnepage || "",
+        motivoOnepage: e.motivoOnepage || ""
+      };
+    });
+    var semana = WEEK_ID || todayISO();
+    return { tipo: "RPS", supervisor: sup, semana: semana, entries: entries };
+  }
+
+  function syncToSheet(sup){
+    // fetch(no-cors) perde o body do POST no redirecionamento interno do Apps Script.
+    // Envio via formulario oculto + iframe evita esse problema (mesmo padrao do agenda_visitas.html).
+    return new Promise(function(resolve){
+      var payload = buildSyncPayload(sup);
+      var form = document.createElement("form");
+      form.method = "POST";
+      form.action = SYNC_URL;
+      form.target = "syncFrame";
+      form.style.display = "none";
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "payload";
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+      setTimeout(function(){ resolve(true); }, 900);
+    });
+  }
+
+  function renderSyncStatus(){
+    var el = document.getElementById("syncStatus");
+    if (!el) return;
+    el.classList.remove("ok", "error");
+    if (syncState.status === "sending"){
+      el.textContent = "Sincronizando…";
+    } else if (syncState.status === "ok"){
+      el.classList.add("ok");
+      el.textContent = "✓ Sincronizado às " + formatSavedAt(syncState.at);
+    } else if (syncState.status === "error"){
+      el.classList.add("error");
+      el.innerHTML = "Falha ao sincronizar &nbsp;";
+      var btn = document.createElement("button");
+      btn.className = "btn small ghost";
+      btn.textContent = "Tentar de novo";
+      btn.addEventListener("click", function(){ syncCurrentSupervisor(currentSup); });
+      el.appendChild(btn);
+    } else {
+      el.textContent = "";
+    }
+  }
+
+  function syncCurrentSupervisor(sup){
+    if (!sup) return;
+    syncState = { status: "sending", at: syncState.at };
+    renderSyncStatus();
+    syncToSheet(sup).then(function(){
+      syncState = { status: "ok", at: Date.now() };
+      renderSyncStatus();
+    }).catch(function(){
+      syncState = { status: "error", at: syncState.at };
+      renderSyncStatus();
+    });
+  }
+
+  function fetchRemoteState(sup){
+    if (!RPS_STATUS_CSV_URL || RPS_STATUS_CSV_URL.indexOf("COLE_AQUI") === 0) return Promise.resolve(false);
+    return fetch(csvUrlWithCacheBust(RPS_STATUS_CSV_URL), {cache:"no-store"}).then(function(r){ return r.text(); })
+      .then(function(text){
+        var rows = parseCsvGeneric(text);
+        if (!rows.length) return false;
+        var header = rows[0].map(function(h){ return h.trim().toUpperCase(); });
+        var idx = {};
+        header.forEach(function(h,i){ idx[h] = i; });
+
+        var found = {};
+        for (var r=1; r<rows.length; r++){
+          var row = rows[r];
+          if ((row[idx["SUPERVISOR"]]||"") !== sup) continue;
+          if (WEEK_ID && idx["SEMANA"]>-1 && (row[idx["SEMANA"]]||"") !== WEEK_ID) continue;
+          var cdd = row[idx["CDD"]] || "";
+          if (!cdd) continue;
+          found[cdd] = {
+            fezRps: row[idx["FEZ_RPS"]] || "",
+            dataRps: row[idx["DATA_RPS"]] || "",
+            motivoRps: row[idx["MOTIVO_RPS"]] || "",
+            enviouOnepage: row[idx["ENVIOU_ONEPAGE"]] || "",
+            motivoOnepage: row[idx["MOTIVO_ONEPAGE"]] || ""
+          };
+        }
+        if (!Object.keys(found).length) return false; // sem registro da planilha pra semana atual - nao mexe no estado local
+
+        answers[sup] = found;
+        saveAnswers();
+        return true;
+      }).catch(function(){ return false; });
+  }
+
+  function syncFromRemoteAndRender(sup){
+    fetchRemoteState(sup).then(function(){
+      if (currentSup === sup){ renderSidebar(); renderMain(); }
+    });
+  }
+
+  function formatSavedAt(ms){
+    var d = new Date(ms);
+    return pad(d.getDate())+"/"+pad(d.getMonth()+1)+" às "+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+
+  /* ---------------- rendering ---------------- */
+  function renderSupSelect(){
+    var sel = document.getElementById("supSelect");
+    var sups = uniqueSupervisors();
+    sel.innerHTML = sups.map(function(s){ return '<option value="'+escapeAttr(s)+'">'+escapeHtml(s)+'</option>'; }).join("");
+    if (!currentSup || sups.indexOf(currentSup) === -1) currentSup = sups[0] || null;
+    sel.value = currentSup || "";
+  }
+
+  function renderSidebar(){
+    if (!currentSup) return;
+    var cdds = cddsForSupervisor(currentSup);
+    var total = cdds.length;
+    var done = cdds.filter(function(cdd){ return isComplete(getAnswer(currentSup, cdd)); }).length;
+
+    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statDone").textContent = done;
+    var pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById("statBar").style.width = pct + "%";
+    document.getElementById("statPct").textContent = pct + "%";
+
+    renderSyncStatus();
+  }
+
+  function renderTopbar(){
+    document.getElementById("supName").textContent = currentSup || "—";
+    var cdds = currentSup ? cddsForSupervisor(currentSup) : [];
+    document.getElementById("supEyebrow").textContent = cdds.length + " CDD" + (cdds.length===1?"":"s") + " na carteira";
+  }
+
+  function questionHtml(sup, cdd, opts){
+    var e = getAnswer(sup, cdd);
+    var val = e[opts.field];
+    var showErr = val === "NAO" && opts.condField && !(e[opts.condField] && e[opts.condField].trim());
+    var showSimErr = val === "SIM" && opts.simField && !(e[opts.simField] && e[opts.simField].trim());
+    var html = '<div class="question" data-qfield="'+opts.field+'">';
+    html += '<div class="q-label">'+opts.label+'</div>';
+    html += '<div class="yn-toggle">';
+    html += '<button type="button" class="yn-btn sim'+(val==="SIM"?" on":"")+'" data-cdd="'+escapeAttr(cdd)+'" data-field="'+opts.field+'" data-value="SIM">Sim</button>';
+    html += '<button type="button" class="yn-btn nao'+(val==="NAO"?" on":"")+'" data-cdd="'+escapeAttr(cdd)+'" data-field="'+opts.field+'" data-value="NAO">Não</button>';
+    html += '</div>';
+    if (val === "SIM" && opts.simField){
+      html += '<div class="cond-field"><input type="'+opts.simType+'" data-cdd="'+escapeAttr(cdd)+'" data-field="'+opts.simField+'" value="'+escapeAttr(e[opts.simField]||"")+'" placeholder="'+opts.simPlaceholder+'">' +
+        '<div class="cond-hint'+(showSimErr?" show":"")+'">'+opts.simRequiredLabel+'</div></div>';
+    }
+    if (val === "NAO" && opts.condOptions){
+      var current = e[opts.condField] || "";
+      html += '<div class="cond-field"><select data-cdd="'+escapeAttr(cdd)+'" data-field="'+opts.condField+'">' +
+        '<option value="">Selecione o motivo</option>' +
+        opts.condOptions.map(function(o){
+          return '<option value="'+escapeAttr(o)+'"'+(o===current?" selected":"")+'>'+escapeHtml(o)+'</option>';
+        }).join("") +
+        '</select>' +
+        '<div class="cond-hint'+(showErr?" show":"")+'">Motivo obrigatório</div></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderCddList(){
+    var el = document.getElementById("cddList");
+    if (!currentSup){ el.innerHTML = ""; return; }
+    var cdds = cddsForSupervisor(currentSup);
+    if (!cdds.length){ el.innerHTML = '<div class="cdd-card">Nenhum CDD encontrado para este supervisor.</div>'; return; }
+
+    el.innerHTML = cdds.map(function(cdd){
+      var complete = isComplete(getAnswer(currentSup, cdd));
+      var html = '<div class="cdd-card'+(complete?" complete":"")+'">';
+      html += '<h3><span class="ok-dot"></span>'+escapeHtml(cdd)+'</h3>';
+      html += questionHtml(currentSup, cdd, {
+        field: "fezRps", label: "Você fez a RPS com o GV/GC essa semana?",
+        simField: "dataRps", simType: "date", simPlaceholder: "Data da RPS", simRequiredLabel: "Data obrigatória",
+        condField: "motivoRps", condOptions: RPS_MOTIVOS
+      });
+      html += questionHtml(currentSup, cdd, {
+        field: "enviouOnepage", label: "Você enviou a One Page ao GV/GC, com cópia para a gestão SPOT?"
+      });
+      html += '</div>';
+      return html;
+    }).join("");
+
+    Array.prototype.forEach.call(el.querySelectorAll(".yn-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        var cdd = btn.getAttribute("data-cdd");
+        var field = btn.getAttribute("data-field");
+        var value = btn.getAttribute("data-value");
+        var current = getAnswer(currentSup, cdd)[field];
+        var newValue = current === value ? "" : value;
+        setField(currentSup, cdd, field, newValue);
+        renderMain();
+        renderSidebar();
+        syncCurrentSupervisor(currentSup);
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll('.cond-field input[type="date"]'), function(input){
+      input.addEventListener("input", function(){
+        setFieldLight(currentSup, input.getAttribute("data-cdd"), input.getAttribute("data-field"), input.value, input);
+      });
+      input.addEventListener("change", function(){
+        syncCurrentSupervisor(currentSup);
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll(".cond-field select"), function(sel){
+      sel.addEventListener("change", function(){
+        var cdd = sel.getAttribute("data-cdd");
+        var field = sel.getAttribute("data-field");
+        setFieldStructural(currentSup, cdd, field, sel.value);
+      });
+    });
+  }
+
+  function renderMain(){
+    renderTopbar();
+    renderCddList();
+  }
+
+  /* ---------------- week reset ---------------- */
+  function resetIfNewWeek(){
+    if (!WEEK_ID) return;
+    var localWeek = null;
+    try { localWeek = localStorage.getItem(WEEK_KEY); } catch(e){}
+    if (localWeek === WEEK_ID) return;
+    answers = {};
+    saveAnswers();
+    try { localStorage.setItem(WEEK_KEY, WEEK_ID); } catch(e){}
+  }
+
+  /* ---------------- boot ---------------- */
+  function fetchLatestData(){
+    var weekPromise = fetch(WEEK_URL, {cache:"no-store"}).then(function(res){
+      return res.ok ? res.text() : "";
+    }).catch(function(){ return ""; });
+
+    return fetch(DATA_URL, {cache:"no-store"}).then(function(res){
+      if (!res.ok) throw new Error("http "+res.status);
+      return res.text();
+    }).then(function(text){
+      var parsed = parseRoster(text);
+      if (!parsed || !parsed.length) throw new Error("csv vazio ou colunas erradas");
+      roster = parsed;
+      try { localStorage.setItem(DATA_KEY, text); } catch(e){}
+      return weekPromise;
+    }).then(function(weekText){
+      WEEK_ID = (weekText||"").trim();
+      return true;
+    });
+  }
+
+  function launchApp(){
+    answers = loadAnswers();
+    resetIfNewWeek();
+    currentSup = null;
+    document.getElementById("boot").style.display = "none";
+    document.getElementById("bootError").style.display = "none";
+    document.getElementById("app").classList.add("show");
+    renderSupSelect();
+    renderSidebar();
+    renderMain();
+    if (currentSup) syncFromRemoteAndRender(currentSup);
+  }
+
+  function showBootError(){
+    document.getElementById("boot").style.display = "none";
+    document.getElementById("bootError").style.display = "flex";
+  }
+
+  function boot(){
+    document.getElementById("supSelect").addEventListener("change", function(e){
+      currentSup = e.target.value;
+      syncState = { status: "idle", at: null };
+      renderSidebar();
+      renderMain();
+      syncFromRemoteAndRender(currentSup);
+    });
+
+    document.getElementById("retryBootBtn").addEventListener("click", function(){
+      document.getElementById("bootError").style.display = "none";
+      document.getElementById("boot").style.display = "flex";
+      startBoot();
+    });
+
+    startBoot();
+  }
+
+  function startBoot(){
+    fetchLatestData().then(function(){
+      launchApp();
+    }).catch(function(){
+      var saved = null;
+      try { saved = localStorage.getItem(DATA_KEY); } catch(e){}
+      if (saved){
+        var parsed = parseRoster(saved);
+        if (parsed && parsed.length){
+          roster = parsed;
+          launchApp();
+          return;
+        }
+      }
+      showBootError();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>

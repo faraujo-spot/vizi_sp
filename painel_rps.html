@@ -1,0 +1,294 @@
+<meta charset="UTF-8">
+<title>Painel Gerencial — RPS &amp; One Page</title>
+<style>
+  :root{
+    --bg:#f5f3ee; --surface:#ffffff; --ink:#1c1c1c; --muted:#6b6b6b; --border:#e2ded3;
+    --navy:#13294b; --navy-ink:#ffffff;
+    --green:#1f7a3f; --green-bg:#e6f4ea;
+    --pending:#8a6d1a; --pending-bg:#fbeece;
+    --danger:#a1332a; --danger-bg:#f8e3e0;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--ink);
+  }
+  .wrap{ max-width:1320px; margin:0 auto; padding:24px 20px 50px; }
+  header.top{ margin-bottom:18px; }
+  header.top h1{ font-size:21px; margin:0 0 4px; color:var(--navy); }
+  header.top .sub{ color:var(--muted); font-size:13.5px; }
+  .refresh-row{ display:flex; align-items:center; gap:10px; margin-top:8px; }
+  button{
+    font:inherit; cursor:pointer; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface); padding:7px 13px; color:var(--ink);
+  }
+  button:hover{ border-color:var(--navy); }
+  button:disabled{ opacity:.5; cursor:default; }
+
+  .stats-groups{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; margin-bottom:18px; }
+  .stat-group{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; box-shadow:var(--shadow); }
+  .stat-group .title{ font-size:12.5px; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; }
+  .stat-group .nums{ display:flex; gap:10px; }
+  .stat-group .num-block{ text-align:center; flex:1; border-radius:8px; padding:6px 4px; background:var(--bg); }
+  .stat-group .num-block .n{ font-size:22px; font-weight:700; line-height:1.1; }
+  .stat-group .num-block .l{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; margin-top:2px; }
+  .stat-group .num-block.sim{ background:var(--green-bg); }
+  .stat-group .num-block.sim .n{ color:var(--green); }
+  .stat-group .num-block.nao{ background:var(--danger-bg); }
+  .stat-group .num-block.nao .n{ color:var(--danger); }
+  .stat-group .num-block.pending{ background:var(--pending-bg); }
+  .stat-group .num-block.pending .n{ color:var(--pending); }
+
+  .eyebrow{ color:var(--muted); font-size:12.5px; margin-bottom:10px; }
+  .empty{ color:var(--muted); font-size:13px; padding:20px 0; text-align:center; }
+
+  .cdd-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+  .cdd-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 14px; box-shadow:var(--shadow); min-width:0; }
+  .cdd-card .cdd-name{ font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cdd-card .sup-name{ font-size:10.5px; color:var(--muted); margin-bottom:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .q-block{ display:flex; flex-direction:column; gap:6px; }
+  .farol-row{ display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11.5px; }
+  .farol-row .q{ color:var(--muted); font-weight:600; }
+  .farol-label{ font-size:11.5px; font-weight:700; display:flex; align-items:center; white-space:nowrap; }
+  .farol-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; flex:0 0 auto; }
+  .farol-label.ok{ color:var(--green); } .farol-dot.ok{ background:var(--green); }
+  .farol-label.nao{ color:var(--danger); } .farol-dot.nao{ background:var(--danger); }
+  .farol-label.pending{ color:var(--pending); } .farol-dot.pending{ background:var(--pending); }
+  .detail-line{
+    font-size:10.5px; color:var(--muted); min-height:13px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Painel Gerencial — RPS &amp; One Page</h1>
+    <div class="sub" id="weekLabel">Carregando semana…</div>
+    <div class="refresh-row">
+      <button id="refreshBtn">Atualizar</button>
+      <span class="sub" id="lastUpdated"></span>
+    </div>
+  </header>
+
+  <div class="stats-groups" id="statsGroups"></div>
+  <div class="eyebrow" id="eyebrow"></div>
+  <div class="cdd-grid" id="cddGrid"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DATA_URL = "rps_cdds.csv";
+  var WEEK_URL = "agenda_semana.txt";
+  var RPS_STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=61938302&single=true&output=csv";
+
+  var roster = []; // [{supervisor, cdd}] — ja vem ordenado por SUPERVISOR,CDD do rps_cdds.csv
+  var WEEK_ID = "";
+  var statusMap = {}; // { sup: { cdd: {fezRps,dataRps,motivoRps,enviouOnepage,motivoOnepage} } }
+
+  function norm(s){ return (s||"").toString().trim(); }
+  function escapeHtml(s){ return (s||"").toString().replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function pad(n){ return n<10 ? "0"+n : ""+n; }
+
+  function formatDateBR(iso){
+    if (!iso) return "";
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+    if (!m) return iso;
+    return m[3]+"/"+m[2];
+  }
+
+  function parseCsvGeneric(text){
+    var rows = [];
+    var i=0, field="", row=[], inQuotes=false;
+    text = (text||"").replace(/\r\n/g,"\n").replace(/^﻿/,"");
+    while (i < text.length){
+      var c = text[i];
+      if (inQuotes){
+        if (c === '"'){
+          if (text[i+1] === '"'){ field += '"'; i+=2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += c; i++; continue;
+      } else {
+        if (c === '"'){ inQuotes = true; i++; continue; }
+        if (c === ','){ row.push(field); field=""; i++; continue; }
+        if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=""; i++; continue; }
+        field += c; i++; continue;
+      }
+    }
+    if (field.length || row.length){ row.push(field); rows.push(row); }
+    return rows.filter(function(r){ return r.length>1 || (r[0]||"").trim().length; });
+  }
+
+  function csvUrlWithCacheBust(url){
+    return url + (url.indexOf("?")>-1 ? "&" : "?") + "_=" + Date.now();
+  }
+
+  function parseRoster(text){
+    var rows = parseCsvGeneric(text);
+    if (!rows.length) return [];
+    var header = rows[0].map(function(h){ return h.trim().toUpperCase(); });
+    var iSup = header.indexOf("SUPERVISOR");
+    var iCdd = header.indexOf("CDD");
+    if (iSup === -1 || iCdd === -1) return [];
+    var out = [];
+    for (var r=1; r<rows.length; r++){
+      var sup = norm(rows[r][iSup]);
+      var cdd = norm(rows[r][iCdd]);
+      if (!sup || !cdd) continue;
+      out.push({ supervisor: sup, cdd: cdd });
+    }
+    return out;
+  }
+
+  function statusFor(sup, cdd){
+    return (statusMap[sup] && statusMap[sup][cdd]) || null;
+  }
+
+  function loadStatus(){
+    if (!RPS_STATUS_CSV_URL || RPS_STATUS_CSV_URL.indexOf("COLE_AQUI") === 0) return Promise.resolve(false);
+    return fetch(csvUrlWithCacheBust(RPS_STATUS_CSV_URL), {cache:"no-store"}).then(function(r){ return r.text(); })
+      .then(function(text){
+        var rows = parseCsvGeneric(text);
+        statusMap = {};
+        if (!rows.length) return true;
+        var header = rows[0].map(function(h){ return h.trim().toUpperCase(); });
+        var idx = {};
+        header.forEach(function(h,i){ idx[h] = i; });
+        for (var r=1; r<rows.length; r++){
+          var row = rows[r];
+          if (WEEK_ID && idx["SEMANA"]>-1 && (row[idx["SEMANA"]]||"") !== WEEK_ID) continue;
+          var sup = row[idx["SUPERVISOR"]] || "";
+          var cdd = row[idx["CDD"]] || "";
+          if (!sup || !cdd) continue;
+          if (!statusMap[sup]) statusMap[sup] = {};
+          statusMap[sup][cdd] = {
+            fezRps: row[idx["FEZ_RPS"]] || "",
+            dataRps: row[idx["DATA_RPS"]] || "",
+            motivoRps: row[idx["MOTIVO_RPS"]] || "",
+            enviouOnepage: row[idx["ENVIOU_ONEPAGE"]] || "",
+            motivoOnepage: row[idx["MOTIVO_ONEPAGE"]] || ""
+          };
+        }
+        return true;
+      }).catch(function(){ return false; });
+  }
+
+  /* ---------------- rendering ---------------- */
+  // extraOk: se a pergunta exige um campo adicional (data pro RPS-Sim, motivo pro
+  // RPS-Nao), Sim/Nao so conta de verdade quando esse campo tambem estiver
+  // preenchido — senao mostra Pendente, mesmo que fezRps/enviouOnepage ja tenha
+  // sido gravado (o clique sincroniza na hora, antes do campo extra ser respondido).
+  function farol(state, extraOk){
+    if (state === "SIM") return extraOk ? { cls:"ok", label:"Sim" } : { cls:"pending", label:"Pendente" };
+    if (state === "NAO") return extraOk ? { cls:"nao", label:"Não" } : { cls:"pending", label:"Pendente" };
+    return { cls:"pending", label:"Pendente" };
+  }
+
+  function rpsExtraOk(st){
+    if (!st) return false;
+    if (st.fezRps === "SIM") return !!st.dataRps;
+    if (st.fezRps === "NAO") return !!(st.motivoRps && st.motivoRps.trim());
+    return false;
+  }
+
+  function statGroupHtml(title, total, sim, nao, pendente){
+    return '<div class="stat-group">' +
+      '<div class="title">'+escapeHtml(title)+'</div>' +
+      '<div class="nums">' +
+        '<div class="num-block"><div class="n">'+total+'</div><div class="l">Total</div></div>' +
+        '<div class="num-block sim"><div class="n">'+sim+'</div><div class="l">Sim</div></div>' +
+        '<div class="num-block nao"><div class="n">'+nao+'</div><div class="l">Não</div></div>' +
+        '<div class="num-block pending"><div class="n">'+pendente+'</div><div class="l">Pendente</div></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderStats(){
+    var totalCdds = roster.length;
+    var rpsOk = 0, rpsNao = 0, opOk = 0, opNao = 0;
+    roster.forEach(function(r){
+      var st = statusFor(r.supervisor, r.cdd);
+      if (!st) return;
+      var rpsOkExtra = rpsExtraOk(st);
+      if (st.fezRps === "SIM" && rpsOkExtra) rpsOk++;
+      else if (st.fezRps === "NAO" && rpsOkExtra) rpsNao++;
+      if (st.enviouOnepage === "SIM") opOk++;
+      else if (st.enviouOnepage === "NAO") opNao++;
+    });
+    document.getElementById("statsGroups").innerHTML =
+      statGroupHtml("RPS com GV/GC", totalCdds, rpsOk, rpsNao, totalCdds - rpsOk - rpsNao) +
+      statGroupHtml("Envio One Page", totalCdds, opOk, opNao, totalCdds - opOk - opNao);
+  }
+
+  function renderCddGrid(){
+    var el = document.getElementById("cddGrid");
+    if (!roster.length){ el.innerHTML = '<div class="empty">Nenhum CDD encontrado.</div>'; return; }
+
+    el.innerHTML = roster.map(function(r){
+      var st = statusFor(r.supervisor, r.cdd) || {};
+      var rps = farol(st.fezRps, rpsExtraOk(st));
+      var op = farol(st.enviouOnepage, true);
+      var rpsExtra = st.fezRps === "SIM" ? formatDateBR(st.dataRps)
+                    : st.fezRps === "NAO" ? (st.motivoRps || "")
+                    : "";
+
+      return '<div class="cdd-card">' +
+        '<div class="cdd-name" title="'+escapeHtml(r.cdd)+'">'+escapeHtml(r.cdd)+'</div>' +
+        '<div class="sup-name" title="'+escapeHtml(r.supervisor)+'">'+escapeHtml(r.supervisor)+'</div>' +
+        '<div class="q-block">' +
+          farolRowHtml("RPS", rps) +
+          '<div class="detail-line" title="'+escapeHtml(rpsExtra)+'">'+escapeHtml(rpsExtra)+'</div>' +
+          farolRowHtml("One Page", op) +
+        '</div>' +
+        '</div>';
+    }).join("");
+  }
+
+  function farolRowHtml(label, farolObj){
+    return '<div class="farol-row">' +
+      '<span class="q">'+escapeHtml(label)+'</span>' +
+      '<span class="farol-label '+farolObj.cls+'"><span class="farol-dot '+farolObj.cls+'"></span>'+farolObj.label+'</span>' +
+    '</div>';
+  }
+
+  function renderAll(){
+    document.getElementById("eyebrow").textContent = roster.length + " combinações Supervisor × CDD cadastradas.";
+    renderStats();
+    renderCddGrid();
+    document.getElementById("lastUpdated").textContent = "Atualizado às " + (function(){
+      var d = new Date(); return pad(d.getHours())+":"+pad(d.getMinutes());
+    })();
+  }
+
+  function loadAll(){
+    document.getElementById("refreshBtn").disabled = true;
+    var weekPromise = fetch(WEEK_URL, {cache:"no-store"}).then(function(res){
+      return res.ok ? res.text() : "";
+    }).catch(function(){ return ""; });
+
+    return fetch(DATA_URL, {cache:"no-store"}).then(function(res){
+      if (!res.ok) throw new Error("http "+res.status);
+      return res.text();
+    }).then(function(text){
+      roster = parseRoster(text);
+      return weekPromise;
+    }).then(function(weekText){
+      WEEK_ID = (weekText||"").trim();
+      document.getElementById("weekLabel").textContent = WEEK_ID ? "Semana publicada: " + WEEK_ID : "Semana atual não identificada.";
+      return loadStatus();
+    }).then(function(){
+      renderAll();
+    }).catch(function(err){
+      document.getElementById("weekLabel").textContent = "Erro ao carregar dados: " + err.message;
+    }).then(function(){
+      document.getElementById("refreshBtn").disabled = false;
+    });
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", loadAll);
+  document.addEventListener("DOMContentLoaded", loadAll);
+})();
+</script>
