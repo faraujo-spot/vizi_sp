@@ -198,7 +198,7 @@
   var SYNC_URL  = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
   var RPS_STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=61938302&single=true&output=csv";
 
-  var RPS_MOTIVOS = ["GV sem agenda", "GV de férias", "Sem GV", "Sem Supervisor", "Supervisor de férias", "Visita Ambev", "Outro"];
+  var RPS_MOTIVOS = ["Ainda ocorrerá", "GV de férias", "GV sem agenda", "Sem GV", "Sem Supervisor", "Supervisor de férias", "Supervisor indisponível", "Visita Ambev", "Outro"];
 
   var roster = []; // [{supervisor, cdd}]
   var WEEK_ID = "";
@@ -546,6 +546,14 @@
         var current = getAnswer(currentSup, cdd)[field];
         var newValue = current === value ? "" : value;
         setField(currentSup, cdd, field, newValue);
+        // Limpa o campo extra do lado que deixou de valer (senao um motivo escolhido
+        // com "Nao" continua sendo enviado por baixo dos panos mesmo depois de trocar
+        // pra "Sim", ja que o campo so fica escondido na tela, nao apagado do estado).
+        if (field === "fezRps"){
+          if (newValue === "SIM") setField(currentSup, cdd, "motivoRps", "");
+          else if (newValue === "NAO") setField(currentSup, cdd, "dataRps", "");
+          else { setField(currentSup, cdd, "dataRps", ""); setField(currentSup, cdd, "motivoRps", ""); }
+        }
         renderMain();
         renderSidebar();
         syncCurrentSupervisor(currentSup);
