@@ -517,8 +517,10 @@
   function syncToSheet(sup){
     // fetch(no-cors) perde o body do POST no redirecionamento interno do Apps Script.
     // Envio via formulário oculto + iframe evita esse problema (é navegação real, não fetch).
+    // Como isso impede ler a resposta do servidor, o "sucesso" do form por si só nao prova
+    // nada — por isso confirmamos de verdade lendo a planilha publicada depois (verifySync).
+    var payload = buildSyncPayload(sup);
     return new Promise(function(resolve){
-      var payload = buildSyncPayload(sup);
       var iframe = document.getElementById("syncFrame");
       var form = document.createElement("form");
       form.method = "POST";
@@ -534,6 +536,31 @@
       form.submit();
       document.body.removeChild(form);
       setTimeout(function(){ resolve(true); }, 900);
+    }).then(function(){
+      return verifySync(sup, payload, 0);
+    });
+  }
+
+  function verifySync(sup, payload, attempt){
+    return fetch(csvUrlWithCacheBust(STATUS_CSV_URL), {cache:"no-store"}).then(function(r){ return r.text(); }).then(function(text){
+      var rows = parseCsvGeneric(text);
+      if (!rows.length) throw new Error("planilha sem dados");
+      var header = rows[0];
+      var idx = {};
+      header.forEach(function(h,i){ idx[h.trim().toUpperCase()] = i; });
+      for (var i=1; i<rows.length; i++){
+        if ((rows[i][idx["SUPERVISOR"]]||"") !== sup) continue;
+        if ((rows[i][idx["SEMANA"]]||"") !== payload.semana) continue;
+        var gravadoRaw = idx["GRAVADO_EM"]>-1 ? rows[i][idx["GRAVADO_EM"]] : "";
+        var t = gravadoRaw ? new Date(gravadoRaw).getTime() : NaN;
+        if (!isNaN(t) && (Date.now() - t) < 60000) return true; // gravado no ultimo minuto = confirma que chegou agora
+      }
+      throw new Error("ainda nao confirmado");
+    }).catch(function(){
+      if (attempt >= 4) throw new Error("nao foi possivel confirmar o envio pra planilha");
+      return new Promise(function(res){ setTimeout(res, 1500); }).then(function(){
+        return verifySync(sup, payload, attempt + 1);
+      });
     });
   }
   function parseCsvGeneric(text){
