@@ -25,6 +25,8 @@
   }
   button:hover{ border-color:var(--navy); }
   button:disabled{ opacity:.5; cursor:default; }
+  button.danger{ border-color:var(--danger); color:var(--danger); }
+  button.danger:hover{ background:var(--danger-bg); }
 
   .stats-groups{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; margin-bottom:18px; }
   .stat-group{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; box-shadow:var(--shadow); }
@@ -67,6 +69,7 @@
     <div class="sub" id="weekLabel">Carregando semana…</div>
     <div class="refresh-row">
       <button id="refreshBtn">Atualizar</button>
+      <button id="resetBtn" class="danger">Zerar farol</button>
       <span class="sub" id="lastUpdated"></span>
     </div>
   </header>
@@ -76,13 +79,15 @@
   <div class="cdd-grid" id="cddGrid"></div>
 </div>
 
+<iframe name="syncFrame" id="syncFrame" style="display:none;" title="sync"></iframe>
+
 <script>
 (function(){
   "use strict";
 
   var DATA_URL = "rps_cdds.csv";
   var WEEK_URL = "agenda_semana.txt";
-  var RPS_STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=61938302&single=true&output=csv";
+  var SYNC_URL = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
 
   var roster = []; // [{supervisor, cdd}] — ja vem ordenado por SUPERVISOR,CDD do rps_cdds.csv
   var WEEK_ID = "";
@@ -148,28 +153,26 @@
   }
 
   function loadStatus(){
-    if (!RPS_STATUS_CSV_URL || RPS_STATUS_CSV_URL.indexOf("COLE_AQUI") === 0) return Promise.resolve(false);
-    return fetch(csvUrlWithCacheBust(RPS_STATUS_CSV_URL), {cache:"no-store"}).then(function(r){ return r.text(); })
-      .then(function(text){
-        var rows = parseCsvGeneric(text);
+    // Le direto via doGet no mesmo Apps Script (sem passar pela publicacao "Na
+    // Web" do Google, que tinha atraso de propagacao imprevisivel — as vezes
+    // passava de 1 minuto).
+    return fetch(csvUrlWithCacheBust(SYNC_URL), {cache:"no-store"}).then(function(r){ return r.json(); })
+      .then(function(data){
+        var rowsArr = (data && data.rows) || [];
         statusMap = {};
-        if (!rows.length) return true;
-        var header = rows[0].map(function(h){ return h.trim().toUpperCase(); });
-        var idx = {};
-        header.forEach(function(h,i){ idx[h] = i; });
-        for (var r=1; r<rows.length; r++){
-          var row = rows[r];
-          if (WEEK_ID && idx["SEMANA"]>-1 && (row[idx["SEMANA"]]||"") !== WEEK_ID) continue;
-          var sup = row[idx["SUPERVISOR"]] || "";
-          var cdd = row[idx["CDD"]] || "";
+        for (var r=0; r<rowsArr.length; r++){
+          var row = rowsArr[r];
+          if (WEEK_ID && (row.SEMANA||"") !== WEEK_ID) continue;
+          var sup = row.SUPERVISOR || "";
+          var cdd = row.CDD || "";
           if (!sup || !cdd) continue;
           if (!statusMap[sup]) statusMap[sup] = {};
           statusMap[sup][cdd] = {
-            fezRps: row[idx["FEZ_RPS"]] || "",
-            dataRps: row[idx["DATA_RPS"]] || "",
-            motivoRps: row[idx["MOTIVO_RPS"]] || "",
-            enviouOnepage: row[idx["ENVIOU_ONEPAGE"]] || "",
-            motivoOnepage: row[idx["MOTIVO_ONEPAGE"]] || ""
+            fezRps: row.FEZ_RPS || "",
+            dataRps: row.DATA_RPS || "",
+            motivoRps: row.MOTIVO_RPS || "",
+            enviouOnepage: row.ENVIOU_ONEPAGE || "",
+            motivoOnepage: row.MOTIVO_ONEPAGE || ""
           };
         }
         return true;
@@ -288,7 +291,37 @@
     });
   }
 
+  function resetFarol(){
+    if (!WEEK_ID){ alert("Semana atual não identificada — não dá pra zerar com segurança agora."); return; }
+    var msg = "Isso vai zerar o RPS e o One Page das " + roster.length + " combinações Supervisor × CDD da semana " +
+      WEEK_ID + ". Não dá pra desfazer sozinho. Confirma?";
+    if (!window.confirm(msg)) return;
+
+    var resetBtn = document.getElementById("resetBtn");
+    resetBtn.disabled = true;
+    var payload = { tipo: "RPS", action: "resetRPS", semana: WEEK_ID };
+    var form = document.createElement("form");
+    form.method = "POST";
+    form.action = SYNC_URL;
+    form.target = "syncFrame";
+    form.style.display = "none";
+    var input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "payload";
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    setTimeout(function(){
+      resetBtn.disabled = false;
+      loadAll();
+    }, 1500);
+  }
+
   document.getElementById("refreshBtn").addEventListener("click", loadAll);
+  document.getElementById("resetBtn").addEventListener("click", resetFarol);
   document.addEventListener("DOMContentLoaded", loadAll);
 })();
 </script>

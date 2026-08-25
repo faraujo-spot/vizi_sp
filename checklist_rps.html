@@ -196,7 +196,6 @@
   var DATA_URL  = "rps_cdds.csv";
   var WEEK_URL  = "agenda_semana.txt";
   var SYNC_URL  = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
-  var RPS_STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNc3TlNTDf3d8SiEUyYqh4TIz11z9vZHsLnqDASHgn5qB_JoZQqBnHgfJWuKv9IzWzUb581SDUu3gk/pub?gid=61938302&single=true&output=csv";
 
   var RPS_MOTIVOS = ["Ainda ocorrerá", "GV de férias", "GV sem agenda", "Sem GV", "Sem Supervisor", "Supervisor de férias", "Supervisor indisponível", "Visita Ambev", "Outro"];
 
@@ -396,28 +395,25 @@
   }
 
   function fetchRemoteState(sup){
-    if (!RPS_STATUS_CSV_URL || RPS_STATUS_CSV_URL.indexOf("COLE_AQUI") === 0) return Promise.resolve(false);
-    return fetch(csvUrlWithCacheBust(RPS_STATUS_CSV_URL), {cache:"no-store"}).then(function(r){ return r.text(); })
-      .then(function(text){
-        var rows = parseCsvGeneric(text);
-        if (!rows.length) return false;
-        var header = rows[0].map(function(h){ return h.trim().toUpperCase(); });
-        var idx = {};
-        header.forEach(function(h,i){ idx[h] = i; });
-
+    // Le direto via doGet no mesmo Apps Script (sem passar pela publicacao "Na
+    // Web" do Google, que tinha atraso de propagacao imprevisivel — as vezes
+    // passava de 1 minuto).
+    return fetch(csvUrlWithCacheBust(SYNC_URL), {cache:"no-store"}).then(function(r){ return r.json(); })
+      .then(function(data){
+        var rowsArr = (data && data.rows) || [];
         var found = {};
-        for (var r=1; r<rows.length; r++){
-          var row = rows[r];
-          if ((row[idx["SUPERVISOR"]]||"") !== sup) continue;
-          if (WEEK_ID && idx["SEMANA"]>-1 && (row[idx["SEMANA"]]||"") !== WEEK_ID) continue;
-          var cdd = row[idx["CDD"]] || "";
+        for (var r=0; r<rowsArr.length; r++){
+          var row = rowsArr[r];
+          if ((row.SUPERVISOR||"") !== sup) continue;
+          if (WEEK_ID && (row.SEMANA||"") !== WEEK_ID) continue;
+          var cdd = row.CDD || "";
           if (!cdd) continue;
           found[cdd] = {
-            fezRps: row[idx["FEZ_RPS"]] || "",
-            dataRps: row[idx["DATA_RPS"]] || "",
-            motivoRps: row[idx["MOTIVO_RPS"]] || "",
-            enviouOnepage: row[idx["ENVIOU_ONEPAGE"]] || "",
-            motivoOnepage: row[idx["MOTIVO_ONEPAGE"]] || ""
+            fezRps: row.FEZ_RPS || "",
+            dataRps: row.DATA_RPS || "",
+            motivoRps: row.MOTIVO_RPS || "",
+            enviouOnepage: row.ENVIOU_ONEPAGE || "",
+            motivoOnepage: row.MOTIVO_ONEPAGE || ""
           };
         }
         // O remoto manda: se nao tem nenhuma linha dessa semana pra esse supervisor
@@ -427,11 +423,10 @@
         // navegador que ja tinha resposta em cache continuava mostrando o valor
         // antigo mesmo depois da planilha ser limpa.
         if (!Object.keys(found).length){
-          // O CSV publicado do Google pode demorar pra refletir um sync recente
-          // (ja vimos passar de 1 minuto). Se este navegador sincronizou ha pouco
-          // pra esse supervisor, confia no cache local em vez de confiar num
-          // remoto que ainda pode estar desatualizado — senao a resposta que o
-          // supervisor acabou de dar "desaparece" ao reabrir a pagina.
+          // Mesmo lendo ao vivo, ainda vale uma pequena tolerancia: se este
+          // navegador sincronizou ha pouco pra esse supervisor, confia no cache
+          // local em vez de confiar num remoto lido no meio de uma corrida rara
+          // entre o POST anterior terminar e este GET rodar.
           var recentlySynced = (Date.now() - (lastSync[sup] || 0)) < EMPTY_REMOTE_GRACE_MS;
           if (!recentlySynced && answers[sup] && Object.keys(answers[sup]).length){
             answers[sup] = {};
