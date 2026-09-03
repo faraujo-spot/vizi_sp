@@ -521,19 +521,16 @@ function safe_sort_cmp(a,b){
 function buildLineCharts(){
   const sup=document.getElementById('f-sup').value;
   const cdd=document.getElementById('f-cdd').value;
-  // DIÁRIO: reativo apenas a sup/cdd — não a mes/sem
-  let dailyData;
-  if(sup||cdd){
-    const dm={};
-    fBase.forEach(r=>{const d=r['_data_str'];if(!d)return;
-      if(!dm[d])dm[d]={t:0,v:0,s5t:0,s5v:0};
-      dm[d].t++;if(isVal(r))dm[d].v++;
-      if(r['Score 5']==='Sim'){dm[d].s5t++;if(isVal(r))dm[d].s5v++;}
-    });
-    dailyData=Object.entries(dm).sort((a,b)=>safe_sort_cmp(a[0],b[0])).map(([d,v])=>({d,pct:v.t?+(v.v/v.t*100).toFixed(1):null,pct_s5:v.s5t?+(v.s5v/v.s5t*100).toFixed(1):null}));
-  } else {
-    dailyData=[...TASK_DAILY].slice(-30); // últimos 30 dias
-  }
+  // DIÁRIO: sempre reativo a mes/sem/sup/cdd (usa fBase, já filtrado)
+  const dm={};
+  fBase.forEach(r=>{const d=r['_data_str'];if(!d)return;
+    if(!dm[d])dm[d]={t:0,v:0,s5t:0,s5v:0};
+    dm[d].t++;if(isVal(r))dm[d].v++;
+    if(r['Score 5']==='Sim'){dm[d].s5t++;if(isVal(r))dm[d].s5v++;}
+  });
+  const dailyData=Object.entries(dm).sort((a,b)=>safe_sort_cmp(a[0],b[0]))
+    .map(([d,v])=>({d,pct:v.t?+(v.v/v.t*100).toFixed(1):null,pct_s5:v.s5t?+(v.s5v/v.s5t*100).toFixed(1):null}))
+    .slice(-30); // no máximo os últimos 30 dias do recorte filtrado
   const dl=dailyData.map(d=>d.d),dgP=dailyData.map(d=>d.pct),ds5P=dailyData.map(d=>d.pct_s5);
   const ctx1=document.getElementById('chartDaily').getContext('2d');
   if(chartDaily)chartDaily.destroy();
