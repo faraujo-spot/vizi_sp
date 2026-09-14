@@ -205,7 +205,9 @@
   }
 
   function loadWeek(){
-    return fetch(WEEK_URL, {cache:"no-store"}).then(function(res){
+    // cache-busting na URL, nao só no header, porque proxies/CDN intermediarios podem
+    // ignorar cache:no-store e servir uma copia antiga por tempo indeterminado.
+    return fetch(csvUrlWithCacheBust(WEEK_URL), {cache:"no-store"}).then(function(res){
       return res.ok ? res.text() : "";
     }).then(function(text){
       WEEK_ID = (text||"").trim();
@@ -213,7 +215,7 @@
   }
 
   function loadRoster(){
-    return fetch(DATA_URL, {cache:"no-store"}).then(function(res){
+    return fetch(csvUrlWithCacheBust(DATA_URL), {cache:"no-store"}).then(function(res){
       if (!res.ok) throw new Error("http "+res.status);
       return res.text();
     }).then(function(text){

@@ -1113,11 +1113,14 @@
   }
 
   function fetchLatestData(){
-    var weekPromise = fetch(WEEK_URL, {cache:"no-store"}).then(function(res){
+    // cache-busting na URL (nao só no header cache:no-store) porque alguns proxies/CDN
+    // intermediarios ignoram o header e servem uma copia antiga por tempo indeterminado -
+    // ja visto travando supervisores numa "semana" de meses atras.
+    var weekPromise = fetch(csvUrlWithCacheBust(WEEK_URL), {cache:"no-store"}).then(function(res){
       return res.ok ? res.text() : "";
     }).catch(function(){ return ""; });
 
-    return fetch(DATA_URL, {cache:"no-store"}).then(function(res){
+    return fetch(csvUrlWithCacheBust(DATA_URL), {cache:"no-store"}).then(function(res){
       if (!res.ok) throw new Error("http "+res.status);
       return res.text();
     }).then(function(text){
