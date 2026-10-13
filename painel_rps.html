@@ -66,7 +66,7 @@
 <div class="wrap">
   <header class="top">
     <h1>Painel Gerencial — RPS &amp; One Page</h1>
-    <div class="sub" id="weekLabel">Carregando semana…</div>
+    <div class="sub">Farol com a resposta mais recente de cada CDD — sem corte semanal; use "Zerar farol" para reiniciar.</div>
     <div class="refresh-row">
       <button id="refreshBtn">Atualizar</button>
       <button id="resetBtn" class="danger">Zerar farol</button>
@@ -86,12 +86,10 @@
   "use strict";
 
   var DATA_URL = "rps_cdds.csv";
-  var WEEK_URL = "agenda_semana.txt";
   var SYNC_URL = "https://script.google.com/macros/s/AKfycbxSA75fpCBdSd2CyRH5TC-vOs7Vv-ujldPGcaAc0M5hltt7SKzxuMKXF7zUGfLxL-RCww/exec";
 
   var roster = []; // [{supervisor, cdd}] — ja vem ordenado por SUPERVISOR,CDD do rps_cdds.csv
-  var WEEK_ID = "";
-  var statusMap = {}; // { sup: { cdd: {fezRps,dataRps,motivoRps,enviouOnepage,motivoOnepage} } }
+  var statusMap = {}; // { sup: { cdd: {fezRps,dataRps,motivoRps,enviouOnepage,motivoOnepage} } } — resposta mais recente, sem corte de semana
 
   function norm(s){ return (s||"").toString().trim(); }
   function escapeHtml(s){ return (s||"").toString().replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -162,7 +160,6 @@
         statusMap = {};
         for (var r=0; r<rowsArr.length; r++){
           var row = rowsArr[r];
-          if (WEEK_ID && (row.SEMANA||"") !== WEEK_ID) continue;
           var sup = row.SUPERVISOR || "";
           var cdd = row.CDD || "";
           if (!sup || !cdd) continue;
@@ -268,38 +265,29 @@
 
   function loadAll(){
     document.getElementById("refreshBtn").disabled = true;
-    var weekPromise = fetch(WEEK_URL, {cache:"no-store"}).then(function(res){
-      return res.ok ? res.text() : "";
-    }).catch(function(){ return ""; });
-
     return fetch(DATA_URL, {cache:"no-store"}).then(function(res){
       if (!res.ok) throw new Error("http "+res.status);
       return res.text();
     }).then(function(text){
       roster = parseRoster(text);
-      return weekPromise;
-    }).then(function(weekText){
-      WEEK_ID = (weekText||"").trim();
-      document.getElementById("weekLabel").textContent = WEEK_ID ? "Semana publicada: " + WEEK_ID : "Semana atual não identificada.";
       return loadStatus();
     }).then(function(){
       renderAll();
     }).catch(function(err){
-      document.getElementById("weekLabel").textContent = "Erro ao carregar dados: " + err.message;
+      document.getElementById("eyebrow").textContent = "Erro ao carregar dados: " + err.message;
     }).then(function(){
       document.getElementById("refreshBtn").disabled = false;
     });
   }
 
   function resetFarol(){
-    if (!WEEK_ID){ alert("Semana atual não identificada — não dá pra zerar com segurança agora."); return; }
-    var msg = "Isso vai zerar o RPS e o One Page das " + roster.length + " combinações Supervisor × CDD da semana " +
-      WEEK_ID + ". Não dá pra desfazer sozinho. Confirma?";
+    var msg = "Isso vai zerar o RPS e o One Page das " + roster.length +
+      " combinações Supervisor × CDD (todas, sem distinção de semana). Não dá pra desfazer sozinho. Confirma?";
     if (!window.confirm(msg)) return;
 
     var resetBtn = document.getElementById("resetBtn");
     resetBtn.disabled = true;
-    var payload = { tipo: "RPS", action: "resetRPS", semana: WEEK_ID };
+    var payload = { tipo: "RPS", action: "resetRPS" };
     var form = document.createElement("form");
     form.method = "POST";
     form.action = SYNC_URL;
