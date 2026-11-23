@@ -504,14 +504,31 @@
       });
     });
     var done = stores.filter(function(s){ return getDays(sup, s.chave).length > 0; }).length;
-    var semana = WEEK_ID;
-    if (!semana){
-      // fallback enquanto agenda_semana.txt ainda nao existe no repo (antes do .bat atualizado rodar)
-      var d = new Date();
-      function pad(n){ return n<10 ? "0"+n : ""+n; }
-      semana = d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
-    }
-    return { supervisor: sup, semana: semana, totalPdvs: stores.length, totalAgendados: done, entries: entries };
+    // Sem fallback pra "data de hoje": isso ja gravou agenda numa semana inexistente (21/11/2026,
+    // aparelho do supervisor nao conseguiu baixar agenda_semana.txt) e o painel mostrou PENDENTE.
+    // syncToSheet garante WEEK_ID via ensureWeekId() antes de chegar aqui.
+    return { supervisor: sup, semana: WEEK_ID, totalPdvs: stores.length, totalAgendados: done, entries: entries };
+  }
+
+  function fetchWeekId(attempt){
+    attempt = attempt || 0;
+    return fetch(csvUrlWithCacheBust(WEEK_URL), {cache:"no-store"}).then(function(res){
+      return res.ok ? res.text() : "";
+    }).catch(function(){ return ""; }).then(function(text){
+      var w = (text||"").trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(w)) return w;
+      if (attempt >= 2) return "";
+      return new Promise(function(r){ setTimeout(r, 1000); }).then(function(){ return fetchWeekId(attempt + 1); });
+    });
+  }
+
+  function ensureWeekId(){
+    if (WEEK_ID) return Promise.resolve(WEEK_ID);
+    return fetchWeekId(0).then(function(w){
+      if (!w) throw new Error("semana nao identificada");
+      WEEK_ID = w;
+      return w;
+    });
   }
 
   function syncToSheet(sup){
@@ -519,8 +536,10 @@
     // Envio via formulário oculto + iframe evita esse problema (é navegação real, não fetch).
     // Como isso impede ler a resposta do servidor, o "sucesso" do form por si só nao prova
     // nada — por isso confirmamos de verdade lendo a planilha publicada depois (verifySync).
-    var payload = buildSyncPayload(sup);
-    return new Promise(function(resolve){
+    var payload;
+    return ensureWeekId().then(function(){
+      payload = buildSyncPayload(sup);
+      return new Promise(function(resolve){
       var iframe = document.getElementById("syncFrame");
       var form = document.createElement("form");
       form.method = "POST";
@@ -536,6 +555,7 @@
       form.submit();
       document.body.removeChild(form);
       setTimeout(function(){ resolve(true); }, 900);
+      });
     }).then(function(){
       return verifySync(sup, payload, 0);
     });
@@ -914,7 +934,7 @@
     var statusText = "";
     if (saved.syncStatus === "sending") statusText = " · enviando para o gestor…";
     else if (saved.syncStatus === "ok") statusText = " · enviado ao gestor ✓";
-    else if (saved.syncStatus === "error") statusText = " · falha ao enviar ao gestor";
+    else if (saved.syncStatus === "error") statusText = " · falha ao enviar ao gestor — confira a internet e toque em \"Tentar enviar de novo\"";
     el.innerHTML = '<span>🔒 Agenda gravada em '+formatSavedAt(saved.savedAt)+' — travada para edição nesta semana.'+statusText+'</span>' +
       '<div style="display:flex;gap:8px;">' +
       (saved.syncStatus === "error" ? '<button class="btn small ghost" id="retrySyncBtn">Tentar enviar de novo</button>' : '') +
@@ -1116,9 +1136,7 @@
     // cache-busting na URL (nao só no header cache:no-store) porque alguns proxies/CDN
     // intermediarios ignoram o header e servem uma copia antiga por tempo indeterminado -
     // ja visto travando supervisores numa "semana" de meses atras.
-    var weekPromise = fetch(csvUrlWithCacheBust(WEEK_URL), {cache:"no-store"}).then(function(res){
-      return res.ok ? res.text() : "";
-    }).catch(function(){ return ""; });
+    var weekPromise = fetchWeekId(0);
 
     return fetch(csvUrlWithCacheBust(DATA_URL), {cache:"no-store"}).then(function(res){
       if (!res.ok) throw new Error("http "+res.status);
