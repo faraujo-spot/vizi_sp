@@ -137,13 +137,19 @@ tr:last-child td{border-bottom:none}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:#f0f2f5}
 ::-webkit-scrollbar-thumb{background:#dce3ef;border-radius:2px}
+
+.vig{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.vig-chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);color:#dbe4f3;text-transform:none;letter-spacing:0}
+.vig-chip b{color:#fff}
+.vig-chip.warn{background:#f59e0b;color:#1a2c52}.vig-chip.warn b{color:#1a2c52}
+.vig-bar{background:#fffbeb;border-bottom:1px solid #fcd34d;color:#92400e;font-size:12px;padding:8px 26px}
 </style>
 </head>
 <body>
 <div class="hdr">
   <div class="hdr-top">
     <div><div class="hdr-title">GPS | Promotores</div>
-    <div class="hdr-sub">Bases atualizadas em 24/11/2026 &nbsp;·&nbsp; Excluídas marcações não planejadas</div></div>
+    <div class="hdr-sub">Processado em 24/11/2026 &nbsp;·&nbsp; Excluídas marcações não planejadas</div><div class="vig"><span class="vig-chip">GPS até <b>23/11/2026</b></span><span class="vig-chip warn">⚠ Tasks até <b>18/11/2026</b> · 5 dias de atraso</span></div></div>
     <button class="btn-menu" onclick="window.location.href=(localStorage.getItem('vizi_index')||'index.html')">← Menu principal</button>
   </div>
   <div class="nav-tabs">
@@ -152,6 +158,7 @@ tr:last-child td{border-bottom:none}
     <button class="nav-tab" onclick="showPage('jornada',this)" style="display:none">Jornada | Promotores</button>
   </div>
 </div>
+<div class="vig-bar">⚠ <b>Base de Tasks desatualizada:</b> os indicadores de Tasks vão até 18/11/2026. Os dias seguintes ainda não estão refletidos — semanas em andamento podem aparecer com volume menor.</div>
 
 <!-- RESUMO -->
 <div class="page active" id="page-resumo">
