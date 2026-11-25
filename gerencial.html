@@ -355,10 +355,10 @@
 
     var html = "";
     html += "<div class='stat-card'><div class='label'>Supervisores gravaram</div><div class='value'>"+gravados+"/"+totalSup+"</div><div class='sub'>"+pctSup+"% da equipe</div></div>";
-    html += "<div class='stat-card'><div class='label'>Pendentes</div><div class='value'>"+(totalSup-gravados)+"</div><div class='sub'>ainda não gravaram esta semana</div></div>";
+    html += "<div class='stat-card'><div class='label'>Pendentes</div><div class='value'>"+(totalSup-gravados)+"</div><div class='sub'>sem gravação nesta semana</div></div>";
     html += "<div class='stat-card'><div class='label'>PDVs agendados</div><div class='value'>"+totalAgendadosGeral+"/"+totalPdvsGeral+"</div><div class='sub'>"+pctPdv+"% da carteira total</div></div>";
-    html += "<div class='stat-card'><div class='label'><span class='sbadge s5'>★5</span>Score 5 agendados</div><div class='value'>"+score5AgendadosGeral+"/"+score5TotalGeral+"</div><div class='sub'>"+pctScore5+"% dos PDVs Score 5</div></div>";
-    html += "<div class='stat-card'><div class='label'><span class='sbadge s100'>★100</span>Score 100 agendados</div><div class='value'>"+score100AgendadosGeral+"/"+score100TotalGeral+"</div><div class='sub'>"+pctScore100+"% dos PDVs Score 100</div></div>";
+    html += "<div class='stat-card'><div class='label'><span class='sbadge s5'>★5</span>Agendados</div><div class='value'>"+score5AgendadosGeral+"/"+score5TotalGeral+"</div><div class='sub'>"+pctScore5+"% dos PDVs Score 5</div></div>";
+    html += "<div class='stat-card'><div class='label'><span class='sbadge s100'>★100</span>Agendados</div><div class='value'>"+score100AgendadosGeral+"/"+score100TotalGeral+"</div><div class='sub'>"+pctScore100+"% dos PDVs Score 100</div></div>";
     document.getElementById("statsRow").innerHTML = html;
   }
 
