@@ -21,7 +21,7 @@
     background:var(--bg);
     color:var(--ink);
   }
-  .wrap{ max-width:980px; margin:0 auto; padding:28px 20px 60px; }
+  .wrap{ max-width:1100px; margin:0 auto; padding:28px 20px 60px; }
   header.top{ margin-bottom:22px; }
   header.top h1{ font-size:22px; margin:0 0 4px; color:var(--navy); }
   header.top .sub{ color:var(--muted); font-size:14px; }
@@ -32,7 +32,8 @@
   }
   button:hover{ border-color:var(--navy); }
   button:disabled{ opacity:.5; cursor:default; }
-  .stats-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:22px; }
+  .stats-row{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:22px; }
+  @media (max-width: 860px){ .stats-row{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
   .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); }
   .stat-card .label{ font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); margin-bottom:6px; }
   .stat-card .value{ font-size:24px; font-weight:700; color:var(--navy); }
