@@ -61,6 +61,9 @@
   .pdv-row.score5{ background:#fff7e0; border-radius:8px; margin:0 -8px; padding:8px; border-bottom-color:#e8c766; }
   .pdv-row .loja{ font-weight:600; }
   .score5-star{ color:#b8860b; font-weight:700; margin-right:4px; }
+  .sbadge{ display:inline-block; font-size:10.5px; font-weight:800; line-height:1.4; padding:0 6px; border-radius:99px; margin-right:5px; vertical-align:1px; letter-spacing:.02em; white-space:nowrap; }
+  .sbadge.s5{ background:#f3dd8f; color:#6b4f00; }
+  .sbadge.s100{ background:#e5d4f2; color:#5a2a82; }
   .pdv-row .meta{ color:var(--muted); font-size:12px; }
   .pdv-row .days{ display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
   .pdv-row .day-pill{ font-size:11px; padding:2px 7px; border-radius:6px; background:var(--navy); color:var(--navy-ink); font-weight:700; }
@@ -144,6 +147,7 @@
     }
     var iCidade = findCol(header, ["CIDADE"]);
     var iScore5 = findCol(header, ["SCORE5", "SCORE 5"]);
+    var iScore100 = findCol(header, ["SCORE100", "SCORE 100"]);
 
     if (iSupervisor === -1 || iLoja === -1){ return null; }
 
@@ -162,7 +166,8 @@
         loja: loja,
         endereco: iEndereco>-1 ? norm(cols[iEndereco]) : "",
         cidade: iCidade>-1 ? norm(cols[iCidade]) : "",
-        score5: iScore5>-1 ? norm(cols[iScore5]).toUpperCase() === "SIM" : false
+        score5: iScore5>-1 ? norm(cols[iScore5]).toUpperCase() === "SIM" : false,
+        score100: iScore100>-1 ? norm(cols[iScore100]).toUpperCase() === "SIM" : false
       });
     }
     return out;
@@ -327,26 +332,32 @@
 
     var totalPdvsGeral = 0, totalAgendadosGeral = 0;
     var score5TotalGeral = 0, score5AgendadosGeral = 0;
+    var score100TotalGeral = 0, score100AgendadosGeral = 0;
     sups.forEach(function(s){
       totalPdvsGeral += roster[s].pdvs.length;
       totalAgendadosGeral += (statusBySup[s] ? statusBySup[s].totalAgendados : 0);
       var det = detailBySup[s] || {};
+      var seen = {}; // o roteiro repete a loja por promotor - conta cada PDV uma vez
       roster[s].pdvs.forEach(function(p){
-        if (!p.score5) return;
-        score5TotalGeral++;
-        if (det[p.chave] && det[p.chave].length) score5AgendadosGeral++;
+        if (seen[p.chave]) return;
+        seen[p.chave] = true;
+        var agendado = !!(det[p.chave] && det[p.chave].length);
+        if (p.score5){ score5TotalGeral++; if (agendado) score5AgendadosGeral++; }
+        if (p.score100){ score100TotalGeral++; if (agendado) score100AgendadosGeral++; }
       });
     });
 
     var pctSup = totalSup ? Math.round((gravados/totalSup)*100) : 0;
     var pctPdv = totalPdvsGeral ? Math.round((totalAgendadosGeral/totalPdvsGeral)*100) : 0;
     var pctScore5 = score5TotalGeral ? Math.round((score5AgendadosGeral/score5TotalGeral)*100) : 0;
+    var pctScore100 = score100TotalGeral ? Math.round((score100AgendadosGeral/score100TotalGeral)*100) : 0;
 
     var html = "";
     html += "<div class='stat-card'><div class='label'>Supervisores gravaram</div><div class='value'>"+gravados+"/"+totalSup+"</div><div class='sub'>"+pctSup+"% da equipe</div></div>";
     html += "<div class='stat-card'><div class='label'>Pendentes</div><div class='value'>"+(totalSup-gravados)+"</div><div class='sub'>ainda não gravaram esta semana</div></div>";
     html += "<div class='stat-card'><div class='label'>PDVs agendados</div><div class='value'>"+totalAgendadosGeral+"/"+totalPdvsGeral+"</div><div class='sub'>"+pctPdv+"% da carteira total</div></div>";
-    html += "<div class='stat-card'><div class='label'>★ Score 5 agendados</div><div class='value'>"+score5AgendadosGeral+"/"+score5TotalGeral+"</div><div class='sub'>"+pctScore5+"% dos PDVs Score 5</div></div>";
+    html += "<div class='stat-card'><div class='label'><span class='sbadge s5'>★5</span>Score 5 agendados</div><div class='value'>"+score5AgendadosGeral+"/"+score5TotalGeral+"</div><div class='sub'>"+pctScore5+"% dos PDVs Score 5</div></div>";
+    html += "<div class='stat-card'><div class='label'><span class='sbadge s100'>★100</span>Score 100 agendados</div><div class='value'>"+score100AgendadosGeral+"/"+score100TotalGeral+"</div><div class='sub'>"+pctScore100+"% dos PDVs Score 100</div></div>";
     document.getElementById("statsRow").innerHTML = html;
   }
 
@@ -391,8 +402,8 @@
       html += "<div class='cdd-group'><h4>"+cdd+" · "+byGroup[cdd].length+" PDVs</h4>";
       byGroup[cdd].forEach(function(p){
         var diasMarcados = det[p.chave] || [];
-        html += "<div class='pdv-row"+(p.score5?" score5":"")+"'>";
-        html += "<div class='info'><div class='loja'>"+(p.score5?"<span class='score5-star'>★</span>":"")+p.loja+"</div><div class='meta'>"+p.cidade+(p.promotor?" · "+p.promotor:"")+"</div></div>";
+        html += "<div class='pdv-row"+((p.score5||p.score100)?" score5":"")+"'>";
+        html += "<div class='info'><div class='loja'>"+(p.score5?"<span class='sbadge s5'>★5</span>":"")+(p.score100?"<span class='sbadge s100'>★100</span>":"")+p.loja+"</div><div class='meta'>"+p.cidade+(p.promotor?" · "+p.promotor:"")+"</div></div>";
         html += "<div class='days'>";
         DAYS.forEach(function(d){
           var marcado = diasMarcados.indexOf(d.label) > -1;
